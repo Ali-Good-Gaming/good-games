@@ -566,11 +566,17 @@
 
         function updateCounters() { document.getElementById('mine-count').textContent = `💣 ${state.mines - state.flags}`; }
 
-        // --- HINT SYSTEM WITH YOUTUBE ---
+          // --- HINT SYSTEM WITH AUTOMATIC YOUTUBE UPDATES ---
+        
+        // Это ID плейлиста всех твоих загрузок. 
+        // У каналов на YouTube он всегда начинается на UU...
+        // Для ALI_Good_Gaming это:
+        const PLAYLIST_ID = "UUeY_H0v-SExjYfFvA8_6X_A"; 
+
         function useHint() {
             if (state.gameOver) return;
 
-            // FIRST HINT: Normal Game Hint
+            // ПЕРВАЯ ПОДСКАЗКА: Обычная (подсвечивает клетку)
             if (state.hintsUsed === 0) {
                 let safeCells = [];
                 state.grid.forEach((row, r) => row.forEach((cell, c) => {
@@ -580,36 +586,39 @@
                 if (safeCells.length > 0) {
                     const target = safeCells[Math.floor(Math.random() * safeCells.length)];
                     const el = state.grid[target.r][target.c].element;
-                    el.style.backgroundColor = '#fdcb6e'; el.style.transform = 'scale(1.2)';
+                    el.style.backgroundColor = '#fdcb6e'; 
+                    el.style.transform = 'scale(1.2)';
                     setTimeout(() => { el.style.backgroundColor = ''; el.style.transform = ''; }, 500);
                     state.hintsUsed++;
                 }
             } 
-            // SECOND HINT: Trigger YouTube Shorts
+            // ВТОРАЯ И ПОСЛЕДУЮЩИЕ: Открывает свежее видео
             else {
                 openYouTube();
             }
         }
 
         function openYouTube() {
-    const modal = document.getElementById('yt-modal');
-    const iframe = document.getElementById('yt-iframe');
-    
-    // Выбираем случайный ID из твоего списка
-    const vidId = SHORTS_PLAYLIST[Math.floor(Math.random() * SHORTS_PLAYLIST.length)];
-    
-    // Исправленный URL: используем домен youtube-nocookie и правильный путь
-    iframe.src = `https://www.youtube-nocookie.com/embed/${vidId}?autoplay=1&modestbranding=1&rel=0`;
-    
-    modal.classList.add('active');
-}
+            const modal = document.getElementById('yt-modal');
+            const iframe = document.getElementById('yt-iframe');
+            
+            // Эта ссылка ВСЕГДА открывает твой плейлист "Все видео", 
+            // где самое новое видео всегда будет первым.
+            iframe.src = `https://www.youtube.com/embed/videoseries?list=${PLAYLIST_ID}&autoplay=1`;
+            
+            modal.classList.add('active');
+        }
+
         function closeYouTube() {
             const modal = document.getElementById('yt-modal');
             const iframe = document.getElementById('yt-iframe');
             modal.classList.remove('active');
-            iframe.src = ""; // Stop video
+            iframe.src = ""; // Полная остановка видео
+            
+            // Награда: Сбрасываем счетчик, чтобы игрок снова мог получить обычную подсказку
+            state.hintsUsed = 0; 
+            console.log("Бонусная подсказка от ALI_Good_Gaming получена!");
         }
-
         // --- BACKGROUND ANIMATION (CONSTELLATION) ---
         const bgCanvas = document.getElementById('bg-canvas');
         const bgCtx = bgCanvas.getContext('2d');
