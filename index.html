@@ -4,511 +4,492 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Minesweeper: ALI Gaming Edition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat:wght@400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Montserrat:wght@300;600&display=swap');
 
         :root {
-            /* Theme: Deep Space / Neon */
-            --bg-color: #0d0e1b; /* Darker background */
-            --panel-bg: rgba(22, 33, 62, 0.9); /* Slightly more opaque */
-            --text-color: #e94560; /* Vibrant accent red */
-            --accent-color: #0f3460; /* Dark blue accent */
-            --cell-closed: #1a1a2e; /* Darker cell base */
-            --cell-hover: #2e4d7d; /* Lighter hover for contrast */
-            --cell-open: #131e33; /* Even darker for opened cells */
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Deeper shadow */
-            --glow: 0 0 20px rgba(233, 69, 96, 0.8); /* Brighter, wider glow */
+            --bg-color: #05060f;
+            --text-color: #e94560;
+            --accent-color: #0f3460;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --cell-closed: rgba(26, 26, 46, 0.8);
+            --cell-hover: #2e4d7d;
+            --cell-open: rgba(15, 52, 96, 0.9);
+            --glow: 0 0 20px rgba(233, 69, 96, 0.6);
             --font-main: 'Montserrat', sans-serif;
-            --font-display: 'Orbitron', sans-serif; /* For titles/counters */
-            --mine-color: #ff2e63; /* Explosive red */
-            --flag-color: #fce38a; /* Bright yellow for flag */
-            --border-radius: 12px;
-            --button-border: 1px solid rgba(233, 69, 96, 0.4);
+            --font-display: 'Orbitron', sans-serif;
         }
 
         [data-theme="classic"] {
             --bg-color: #c0c0c0;
-            --panel-bg: #bdbdbd;
             --text-color: #000;
-            --accent-color: #808080;
+            --panel-bg: #bdbdbd;
             --cell-closed: #c0c0c0;
-            --cell-hover: #dcdcdc;
             --cell-open: #e0e0e0;
-            --shadow: inset 2px 2px #fff, inset -2px -2px #808080;
-            --glow: none;
             --font-main: 'Segoe UI', sans-serif;
             --font-display: 'Segoe UI', sans-serif;
-            --mine-color: #000;
-            --flag-color: #ff0000;
-            --border-radius: 0;
-            --button-border: 1px solid #808080;
         }
 
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
         
         body {
-            margin: 0;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: #fff;
             font-family: var(--font-main);
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
         }
 
-        /* Interactive Background Canvas */
+        /* --- BACKGROUND --- */
         #bg-canvas {
-            position: absolute;
+            position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none; /* Let clicks pass through */
+            z-index: -1;
         }
 
-        /* UI Containers */
+        /* --- UI WRAPPER --- */
         #app {
             position: relative;
+            z-index: 10;
             width: 100%;
             max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            text-align: center;
             padding: 20px;
-            z-index: 10;
         }
 
-        /* Screens */
+        /* --- SCREENS --- */
         .screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
+            display: none;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 100;
-            transition: opacity 0.5s, transform 0.5s;
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.9);
-            background: rgba(0,0,0,0.6); /* Semi-transparent overlay for screens */
-            backdrop-filter: blur(8px);
-            padding: 20px;
+            animation: fadeIn 0.5s ease;
         }
-        
-        .screen.active { 
-            opacity: 1; 
-            pointer-events: all; 
-            transform: scale(1);
-        }
+        .screen.active { display: flex; }
 
-        /* Main Menu Styling */
-        #main-menu {
-            background: rgba(0,0,0,0.5); /* Blurry background for menu screen */
-            backdrop-filter: blur(10px);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 40px 20px;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        h1 { 
+        h1 {
             font-family: var(--font-display);
-            font-size: 3.8rem; 
-            text-shadow: var(--glow); 
-            margin-bottom: 0.8rem; 
-            text-align: center; 
-            letter-spacing: 3px;
-            background: linear-gradient(45deg, #e94560, #fce38a);
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            background: linear-gradient(to right, #e94560, #fce38a);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: var(--glow);
+            margin-bottom: 10px;
         }
-        
+
         .subtitle {
-            margin-bottom: 2.5rem;
-            color: #fff;
-            opacity: 0.7;
-            font-size: 1.2rem;
-            text-transform: uppercase;
+            font-size: 1rem;
             letter-spacing: 5px;
-            font-family: var(--font-main);
-            text-align: center;
-        }
-
-        /* Social Icons */
-        .social-icons {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 3rem;
-        }
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            transition: transform 0.2s, filter 0.2s;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-        }
-        .social-icon:hover {
-            transform: translateY(-5px) scale(1.1);
-            filter: drop-shadow(0 0 15px var(--text-color));
-        }
-
-        /* Buttons */
-        .btn {
-            background: linear-gradient(135deg, var(--panel-bg) 0%, rgba(22, 33, 62, 0.7) 100%);
+            opacity: 0.8;
+            margin-bottom: 30px;
             color: #fff;
-            border: var(--button-border);
-            padding: 18px 35px;
-            font-size: 1.3rem;
-            margin: 15px;
-            cursor: pointer;
-            border-radius: var(--border-radius);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            min-width: 250px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-            font-family: var(--font-display);
+        }
+
+        /* --- SOCIALS --- */
+        .social-bar {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .social-bar a {
+            color: #fff;
+            font-size: 2rem;
+            transition: 0.3s;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+        }
+        .social-bar a:hover {
+            transform: translateY(-5px) scale(1.2);
+            color: var(--text-color);
+            filter: drop-shadow(0 0 10px var(--text-color));
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
             backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
+            color: #fff;
+            padding: 15px 40px;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            min-width: 260px;
+            transition: 0.3s;
+            text-transform: uppercase;
         }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-            transition: 0.6s ease-out;
-        }
-
-        .btn:hover::before { left: 100%; }
-
         .btn:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 30px rgba(233, 69, 96, 0.5);
             background: var(--text-color);
-            color: var(--bg-color);
             border-color: var(--text-color);
-            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+            box-shadow: var(--glow);
+            transform: scale(1.05);
         }
 
-        .btn:active { transform: scale(0.96); box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-
-        /* Game Header */
+        /* --- GAME BOARD --- */
         .hud {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
+            padding: 15px;
             background: var(--panel-bg);
-            padding: 15px 20px;
-            border-radius: var(--border-radius);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
             margin-bottom: 20px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.05);
-            backdrop-filter: blur(15px);
             font-family: var(--font-display);
         }
+        .counter { font-size: 1.5rem; color: #fff; }
 
-        .counter {
-            font-size: 1.8rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-variant-numeric: tabular-nums;
-            color: #fff;
-            text-shadow: 0 0 8px var(--text-color);
-        }
-
-        /* Grid */
         #game-board {
             display: grid;
-            gap: 2px;
-            background: rgba(15, 52, 96, 0.6);
-            padding: 8px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(8px);
-            transition: transform 0.1s;
+            gap: 3px;
+            padding: 10px;
+            background: var(--panel-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            margin: 0 auto;
         }
-
         .cell {
-            width: 30px;
-            height: 30px;
+            width: 32px; height: 32px;
             background: var(--cell-closed);
             border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 900;
-            font-size: 18px;
-            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            color: white; /* Default color for numbers */
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-
-        [data-theme="classic"] .cell { border-radius: 0; border: 2px solid; border-color: #fff #808080 #808080 #fff; }
-
-        .cell:hover:not(.revealed) { 
-            background: var(--cell-hover); 
-            z-index: 2; 
-            transform: scale(1.18); 
-            box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
-        }
-        
-        .cell.revealed {
-            background: var(--cell-open);
-            cursor: default;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: inset 1px 1px 5px rgba(0,0,0,0.3);
-        }
-        
-        [data-theme="classic"] .cell.revealed { border: 1px solid #999; }
-
-        .cell.flagged::after { content: '🚩'; font-size: 18px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .cell.mine { background: var(--mine-color) !important; color: white; animation: shake 0.5s; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .cell.mine::after { content: '💣'; font-size: 20px;}
-
-        /* Numbers colors */
-        .c1 { color: #87CEEB; } /* Sky Blue */
-        .c2 { color: #90EE90; } /* Light Green */
-        .c3 { color: #FF6347; } /* Tomato */
-        .c4 { color: #9370DB; } /* Medium Purple */
-        .c5 { color: #FFD700; } /* Gold */
-        .c6 { color: #40E0D0; } /* Turquoise */
-        .c7 { color: #7B68EE; } /* Medium Slate Blue */
-        .c8 { color: #F08080; } /* Light Coral */
-
-        /* Animations */
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
-
-        /* Modal specific */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(10px);
-            z-index: 200;
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease-out;
+            font-weight: bold; cursor: pointer;
+            transition: 0.2s;
         }
-        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .cell:hover:not(.revealed) { background: var(--cell-hover); transform: scale(1.1); }
+        .cell.revealed { background: var(--cell-open); cursor: default; }
+        .cell.mine { background: #ff2e63 !important; }
+        .cell.flagged::after { content: '🚩'; }
 
+        /* --- MODALS --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal.active { display: flex; }
         .modal-content {
-            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(19, 30, 51, 0.95));
-            padding: 30px;
-            border-radius: 20px;
-            border: 1px solid var(--text-color);
-            box-shadow: 0 0 60px rgba(233, 69, 96, 0.3);
-            max-width: 90%;
-            width: 450px;
-            text-align: center;
-            position: relative;
-            transform: translateY(20px);
-            transition: transform 0.4s ease-out;
-        }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-
-        /* YouTube Modal Specifics */
-        .yt-modal-content {
-            width: 350px; /* Standard vertical video ratio */
-            height: 600px; /* Adjusted for better fit */
-            padding: 0;
-            background: black;
-            overflow: hidden;
-            display: flex; flex-direction: column;
-            border: none; /* Remove border for YouTube frame */
-            box-shadow: 0 0 60px rgba(0,0,0,0.8);
+            background: #1a1a2e; border: 1px solid var(--text-color);
+            padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px;
         }
         
-        .yt-frame {
-            width: 100%;
-            flex-grow: 1;
-            border: none;
-        }
-        
-        .yt-header {
-            padding: 15px;
-            background: #111;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            color: #fff;
-            font-family: var(--font-main);
-        }
-        
-        .yt-skip-btn {
-            background: #333;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            cursor: pointer;
-            border: none;
-            transition: background 0.2s;
-        }
-        .yt-skip-btn:hover { background: #555; }
+        #yt-iframe { width: 100%; height: 500px; border: none; border-radius: 10px; }
 
-        .settings-row { display: flex; justify-content: space-between; margin: 15px 0; align-items: center; color: white; }
-        select { 
-            padding: 10px; 
-            border-radius: 8px; 
-            background: #0f3460; 
-            color: white; 
-            border: 1px solid var(--text-color); 
-            font-family: var(--font-main);
-            font-size: 0.9rem;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Effects Canvas (Fireworks) */
-        #fx-canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 150; width: 100%; height: 100%; }
-        
-        .hidden { display: none !important; }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            h1 { font-size: 3rem; margin-bottom: 0.5rem; }
-            .subtitle { font-size: 1rem; margin-bottom: 2rem; }
-            .btn { min-width: 200px; font-size: 1.1rem; padding: 15px 25px; margin: 10px; }
-            .counter { font-size: 1.4rem; }
-            .cell { width: 28px; height: 28px; font-size: 16px; }
-            #game-board { padding: 6px; }
-            .social-icons { margin-bottom: 2rem; }
-            .social-icon { width: 35px; height: 35px; }
-            .yt-modal-content { width: 90%; height: 500px; } /* Adjust YouTube modal for smaller screens */
-        }
-
-        @media (max-width: 480px) {
-            h1 { font-size: 2.5rem; }
-            .subtitle { font-size: 0.9rem; letter-spacing: 3px; }
-            .btn { min-width: 180px; font-size: 1rem; padding: 12px 20px; }
-            .counter { font-size: 1.2rem; gap: 8px; }
-            .cell { width: 25px; height: 25px; font-size: 14px; }
-            #game-board { padding: 4px; }
-            .social-icon { width: 30px; height: 30px; }
-            .modal-content { padding: 20px; width: 300px; }
-        }
+        /* Цвета цифр */
+        .c1 { color: #4facfe; } .c2 { color: #00f260; } .c3 { color: #ff9a9e; }
+        .c4 { color: #a18cd1; } .c5 { color: #fbc2eb; }
     </style>
 </head>
 <body>
 
-    <canvas id="bg-canvas"></canvas>
-    <canvas id="fx-canvas"></canvas>
+<canvas id="bg-canvas"></canvas>
+<canvas id="fx-canvas" style="position:fixed; pointer-events:none; z-index:999;"></canvas>
 
-    <div id="app">
-        <div id="main-menu" class="screen active">
-            <h1>SAPPER PRO</h1>
-            <div class="subtitle">by ALI_Good_Gaming</div>
-            <div class="social-icons">
-                <a href="https://youtube.com/@ali-gg?si=9dAdm-OTQlB_y5e" target="_blank" aria-label="YouTube">
-                    <svg class="social-icon" fill="#FF0000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.872.505 9.377.505 9.377.505s7.505 0 9.377-.505a3.016 3.016 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.454V8.546L15.933 12l-6.388 3.454z"/></svg>
-                </a>
-                <a href="https://www.tiktok.com/@ali_goodgaming?_r=1&_t=ZS-92ZsAe7HzmO" target="_blank" aria-label="TikTok">
-                    <svg class="social-icon" fill="#FE2C55" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.525 21.025a1.232 1.232 0 0 0 1.231-1.231V12.75a.25.25 0 0 1 .25-.25h.721v-3.75h-3.75v3.75h.722a.25.25 0 0 1 .25.25v6.544a1.232 1.232 0 0 0 1.231 1.231zm-6.25-1.229V12.75a.25.25 0 0 1 .25-.25h.722v-3.75h-3.75v3.75h.721a.25.25 0 0 1 .25.25v6.546a1.232 1.232 0 0 0 1.231 1.231zM18 0H6a6 6 0 0 0-6 6v12a6 6 0 0 0 6 6h12a6 6 0 0 0 6-6V6a6 6 0 0 0-6-6z"/></svg>
-                </a>
-                <a href="https://t.me/aligoodgaming" target="_blank" aria-label="Telegram">
-                    <svg class="social-icon" fill="#229ED9" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.553 8.34L8.71 13.91a.76.76 0 0 1-1.09.08l-2.064-1.748c-.288-.244-.24-.694.05-.88l13.116-8.312c.29-.184.67-.09.854.202l1.64 2.624c.184.29.09.67-.202.854L8.71 13.91zM8.09 15.01l-1.468 4.79c-.11.35.21.69.54.51l2.49-1.392a.58.58 0 0 1 .53-.02l3.414 2.392c.33.23.77.08.9-.26l1.246-3.832c.08-.24-.04-.49-.28-.59L8.09 15.01z"/></svg>
-                </a>
-            </div>
-            <div class="btn" onclick="startGame()">Новая Игра</div>
-            <div class="btn" onclick="showSettings()">Настройки</div>
-            <div class="btn" onclick="showRecords()">Рекорды</div>
-        </div>
-
-        <div id="game-ui" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-            <div class="hud">
-                <div class="counter" id="mine-count">💣 10</div>
-                <div class="btn" style="min-width: auto; padding: 8px 18px; margin: 0; font-size: 1.6rem;" onclick="initGame()">🔄</div>
-                <div class="counter" id="timer">⏱️ 000</div>
-            </div>
-            
-            <div id="game-board"></div>
-
-            <div style="display: flex; gap: 15px; margin-top: 25px;">
-                <div class="btn" style="min-width: 120px; padding: 12px 20px; font-size: 1rem;" onclick="useHint()">💡 Подсказка</div>
-                <div class="btn" style="min-width: 120px; padding: 12px 20px; font-size: 1rem;" onclick="exitToMenu()">🏠 Меню</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="modal-title" style="margin-top:0; font-family: var(--font-display); color: #fff;">Заголовок</h2>
-            <div id="modal-body" style="color: #ccc; font-family: var(--font-main);"></div>
-            <div class="btn" onclick="closeModal()" style="margin: 30px auto 0 auto; width: 80%;">Закрыть</div>
-        </div>
-    </div>
-
-    <div id="yt-modal" class="modal-overlay">
-        <div class="modal-content yt-modal-content">
-            <div class="yt-header">
-                <span style="color:white; font-weight:bold; font-family: var(--font-display);">ALI_Good_Gaming Shorts</span>
-                <button class="yt-skip-btn" onclick="closeYouTube()">Скипнуть ✖</button>
-            </div>
-            <iframe id="yt-iframe" class="yt-frame" src="" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
-        </div>
-    </div>
-
-    <script>
-        // --- HINT SYSTEM WITH AUTOMATIC YOUTUBE UPDATES ---
+<div id="app">
+    <div id="screen-menu" class="screen active">
+        <h1>SAPPER PRO</h1>
+        <div class="subtitle">ALI_GOOD_GAMING</div>
         
-        // Это ID плейлиста всех твоих загрузок. 
-        // У каналов на YouTube он всегда начинается на UU...
-        // Для ALI_Good_Gaming это:
-        const PLAYLIST_ID = "UUeY_H0v-SExjYfFvA8_6X_A"; 
+        <div class="social-bar">
+            <a href="https://youtube.com/@ali-gg" target="_blank"><i class="fab fa-youtube"></i></a>
+            <a href="https://www.tiktok.com/@ali_goodgaming" target="_blank"><i class="fab fa-tiktok"></i></a>
+            <a href="https://t.me/aligoodgaming" target="_blank"><i class="fab fa-telegram"></i></a>
+        </div>
 
-        // --- GAME STATE ---
-        const state = {
-            grid: [],
-            rows: 9,
-            cols: 9,
-            mines: 10,
-            flags: 0,
-            gameOver: false,
-            firstClick: true,
-            timer: 0,
-            interval: null,
-            hintsUsed: 0, 
-            difficulty: 'easy',
-            startTime: 0
-        };
+        <button class="btn" onclick="startGame()">Новая Игра</button>
+        <button class="btn" onclick="showModal('settings')">Настройки</button>
+        <button class="btn" onclick="showModal('records')">Рекорды</button>
+    </div>
 
-        const config = {
-            easy: { r: 9, c: 9, m: 10 },
-            medium: { r: 16, c: 16, m: 40 },
-            hard: { r: 16, c: 30, m: 99 }
-        };
+    <div id="screen-game" class="screen">
+        <div class="hud">
+            <div id="mine-count" class="counter">💣 010</div>
+            <button class="btn" style="min-width:auto; padding:10px 20px" onclick="initGame()">🔄</button>
+            <div id="timer" class="counter">⏱️ 000</div>
+        </div>
+        <div id="game-board"></div>
+        <div style="margin-top:20px; display:flex; gap:10px">
+            <button class="btn" style="min-width:120px" onclick="useHint()">💡 Подсказка</button>
+            <button class="btn" style="min-width:120px" onclick="toMenu()">🏠 Меню</button>
+        </div>
+    </div>
+</div>
 
-        // --- AUDIO SYSTEM ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            
-            if (type === 'click') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'flag') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'win') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now + 0.1); osc.frequency.setValueAtTime(659, now + 0.2);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
-                osc.start(now); osc.stop(now + 0.6);
-            } else if (type === 'lose') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <h2 id="modal-title" style="margin-bottom:20px; font-family:var(--font-display)"></h2>
+        <div id="modal-body"></div>
+        <button class="btn" onclick="closeModal()" style="margin-top:20px; min-width:100%">Закрыть</button>
+    </div>
+</div>
+
+<div id="yt-modal" class="modal">
+    <div class="modal-content" style="max-width:360px; padding:10px">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center">
+            <span>ALI_GOOD_GAMING</span>
+            <button onclick="closeYT()" style="background:none; border:none; color:#fff; cursor:pointer">✖ Скипнуть</button>
+        </div>
+        <iframe id="yt-iframe" src="" allow="autoplay"></iframe>
+    </div>
+</div>
+
+<script>
+// --- КОНФИГ ---
+const state = {
+    rows: 9, cols: 9, mines: 10,
+    grid: [], gameOver: false, firstClick: true,
+    timer: 0, interval: null, hints: 0,
+    diff: 'easy'
+};
+
+const PLAYLIST_ID = "UUeY_H0v-SExjYfFvA8_6X_A";
+
+// --- ФОН (CONSTELLATION) ---
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const mouse = { x: null, y: null, radius: 100 };
+
+window.onmousemove = (e) => { mouse.x = e.x; mouse.y = e.y; };
+window.onresize = () => { canvas.width = innerWidth; canvas.height = innerHeight; initParticles(); };
+
+class Particle {
+    constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 2;
+    }
+    update() {
+        this.x += this.vx; this.y += this.vy;
+        if(this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if(this.y < 0 || this.y > canvas.height) this.vy *= -1;
+        
+        let dx = mouse.x - this.x; let dy = mouse.y - this.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < mouse.radius) {
+            this.x -= dx/20; this.y -= dy/20;
+        }
+    }
+    draw() {
+        ctx.fillStyle = 'rgba(233, 69, 96, 0.8)';
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+    }
+}
+
+function initParticles() {
+    canvas.width = innerWidth; canvas.height = innerHeight;
+    particles = [];
+    for(let i=0; i<100; i++) particles.push(new Particle());
+}
+
+function animate() {
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    particles.forEach(p => {
+        p.update(); p.draw();
+        particles.forEach(p2 => {
+            let dist = Math.sqrt((p.x-p2.x)**2 + (p.y-p2.y)**2);
+            if(dist < 100) {
+                ctx.strokeStyle = `rgba(233, 69, 96, ${1 - dist/100})`;
+                ctx.lineWidth = 0.5;
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            }
+        });
+    });
+    requestAnimationFrame(animate);
+}
+
+// --- ЛОГИКА ИГРЫ ---
+function startGame() {
+    document.getElementById('screen-menu').classList.remove('active');
+    document.getElementById('screen-game').classList.add('active');
+    initGame();
+}
+
+function toMenu() {
+    document.getElementById('screen-game').classList.remove('active');
+    document.getElementById('screen-menu').classList.add('active');
+    clearInterval(state.interval);
+}
+
+function initGame() {
+    const d = { easy: [9,9,10], medium: [16,16,40], hard: [16,30,99] }[state.diff];
+    state.rows = d[0]; state.cols = d[1]; state.mines = d[2];
+    state.grid = []; state.gameOver = false; state.firstClick = true;
+    state.timer = 0; state.hints = 0;
+    clearInterval(state.interval);
+    document.getElementById('timer').textContent = "⏱️ 000";
+    document.getElementById('mine-count').textContent = `💣 ${String(state.mines).padStart(3,'0')}`;
+    renderBoard();
+}
+
+function renderBoard() {
+    const board = document.getElementById('game-board');
+    board.style.gridTemplateColumns = `repeat(${state.cols}, 32px)`;
+    board.innerHTML = '';
+    for(let r=0; r<state.rows; r++) {
+        state.grid[r] = [];
+        for(let c=0; c<state.cols; c++) {
+            const el = document.createElement('div');
+            el.className = 'cell';
+            el.onclick = () => reveal(r,c);
+            el.oncontextmenu = (e) => { e.preventDefault(); toggleFlag(r,c); };
+            board.appendChild(el);
+            state.grid[r][c] = { isMine:false, revealed:false, flagged:false, n:0, el };
+        }
+    }
+}
+
+function reveal(r,c) {
+    if(state.gameOver || state.grid[r][c].flagged || state.grid[r][c].revealed) return;
+    if(state.firstClick) {
+        state.firstClick = false;
+        placeMines(r,c);
+        state.interval = setInterval(() => { state.timer++; document.getElementById('timer').textContent = "⏱️ " + String(state.timer).padStart(3,'0'); }, 1000);
+    }
+    
+    const cell = state.grid[r][c];
+    cell.revealed = true;
+    cell.el.classList.add('revealed');
+    
+    if(cell.isMine) {
+        gameOver(false);
+        return;
+    }
+    
+    if(cell.n > 0) {
+        cell.el.textContent = cell.n;
+        cell.el.classList.add('c' + cell.n);
+    } else {
+        for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) {
+            let nr = r+i, nc = c+j;
+            if(nr>=0 && nr<state.rows && nc>=0 && nc<state.cols) reveal(nr, nc);
+        }
+    }
+    checkWin();
+}
+
+function placeMines(exR, exC) {
+    let count = 0;
+    while(count < state.mines) {
+        let r = Math.floor(Math.random()*state.rows), c = Math.floor(Math.random()*state.cols);
+        if(!state.grid[r][c].isMine && Math.abs(r-exR)>1 && Math.abs(c-exC)>1) {
+            state.grid[r][c].isMine = true;
+            count++;
+        }
+    }
+    for(let r=0; r<state.rows; r++) for(let c=0; c<state.cols; c++) {
+        if(state.grid[r][c].isMine) continue;
+        let n = 0;
+        for(let i=-1; i<=1; i++) for(let j=-1; j<=1; j++) {
+            let nr = r+i, nc = c+j;
+            if(nr>=0 && nr<state.rows && nc>=0 && nc<state.cols && state.grid[nr][nc].isMine) n++;
+        }
+        state.grid[r][c].n = n;
+    }
+}
+
+function toggleFlag(r,c) {
+    const cell = state.grid[r][c];
+    if(cell.revealed) return;
+    cell.flagged = !cell.flagged;
+    cell.el.classList.toggle('flagged');
+}
+
+function checkWin() {
+    let count = 0;
+    state.grid.flat().forEach(c => { if(c.revealed) count++; });
+    if(count === state.rows*state.cols - state.mines) gameOver(true);
+}
+
+function gameOver(win) {
+    state.gameOver = true;
+    clearInterval(state.interval);
+    state.grid.flat().forEach(c => { if(c.isMine) { c.el.classList.add('mine'); c.el.textContent = '💣'; }});
+    if(win) {
+        showModal('WIN', 'Ты настоящий профи! 🎉');
+        saveRecord();
+    } else {
+        showModal('BOOM', 'Повезет в следующий раз! 💀');
+    }
+}
+
+// --- ПОДСКАЗКА И YOUTUBE ---
+function useHint() {
+    if(state.gameOver) return;
+    if(state.hints === 0) {
+        let safe = state.grid.flat().filter(c => !c.isMine && !c.revealed);
+        let target = safe[Math.floor(Math.random()*safe.length)];
+        target.el.style.boxShadow = "0 0 15px #fff";
+        setTimeout(() => target.el.style.boxShadow = "", 1000);
+        state.hints++;
+    } else {
+        document.getElementById('yt-iframe').src = `https://www.youtube.com/embed/videoseries?list=${PLAYLIST_ID}&autoplay=1`;
+        document.getElementById('yt-modal').classList.add('active');
+    }
+}
+
+function closeYT() {
+    document.getElementById('yt-modal').classList.remove('active');
+    document.getElementById('yt-iframe').src = "";
+    state.hints = 0; // Награда - сброс подсказки
+}
+
+// --- МЕНЕДЖЕР ОКОН ---
+function showModal(type) {
+    const m = document.getElementById('modal');
+    const t = document.getElementById('modal-title');
+    const b = document.getElementById('modal-body');
+    m.classList.add('active');
+    
+    if(type === 'settings') {
+        t.textContent = 'Настройки';
+        b.innerHTML = `
+            <p>Сложность:</p>
+            <select onchange="state.diff=this.value; initGame()" style="width:100%; padding:10px; margin:10px 0; background:#0f3460; color:#fff; border:none">
+                <option value="easy">Легко (9x9)</option>
+                <option value="medium">Средне (16x16)</option>
+                <option value="hard">Сложно (16x30)</option>
+            </select>
+            <p>Тема:</p>
+            <button class="btn" onclick="document.documentElement.setAttribute('data-theme', 'neon')" style="min-width:100px; font-size:0.8rem">Неон</button>
+            <button class="btn" onclick="document.documentElement.setAttribute('data-theme', 'classic')" style="min-width:100px; font-size:0.8rem">Классик</button>
+        `;
+    } else if (type === 'records') {
+        t.textContent = 'Рекорды';
+        let recs = JSON.parse(localStorage.getItem('ali_recs') || '[]');
+        b.innerHTML = recs.length ? recs.map(r => `<div>${r.name}: ${r.time} сек</div>`).join('') : 'Пока пусто...';
+    } else if (type === 'WIN' || type === 'BOOM') {
+        t.textContent = type;
+        b.innerHTML = arguments[1] || '';
+    }
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+function saveRecord() {
+    let name = prompt("Твоё имя для таблицы рекордов:", "Игрок");
+    if(!name) return;
+    let recs = JSON.parse(localStorage.getItem('ali_recs') || '[]');
+    recs.push({name, time: state.timer});
+    recs.sort((a,b)=>a.time - b.time);
+    localStorage.setItem('ali_recs', JSON.stringify(recs.slice(0,5)));
+}
+
+// Старт
+initParticles();
+animate();
+</script>
+</body>
+</html>
+
