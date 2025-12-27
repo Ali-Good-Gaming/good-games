@@ -592,18 +592,17 @@
         }
 
         function openYouTube() {
-            const modal = document.getElementById('yt-modal');
-            const iframe = document.getElementById('yt-iframe');
-            
-            // Pick random video
-            const vidId = SHORTS_PLAYLIST[Math.floor(Math.random() * SHORTS_PLAYLIST.length)];
-            
-            // Use embed URL with autoplay
-            iframe.src = `https://www.youtube.com/embed/${vidId}?autoplay=1&controls=1&loop=1`;
-            
-            modal.classList.add('active');
-        }
-
+    const modal = document.getElementById('yt-modal');
+    const iframe = document.getElementById('yt-iframe');
+    
+    // Выбираем случайный ID из твоего списка
+    const vidId = SHORTS_PLAYLIST[Math.floor(Math.random() * SHORTS_PLAYLIST.length)];
+    
+    // Исправленный URL: используем домен youtube-nocookie и правильный путь
+    iframe.src = `https://www.youtube-nocookie.com/embed/${vidId}?autoplay=1&modestbranding=1&rel=0`;
+    
+    modal.classList.add('active');
+}
         function closeYouTube() {
             const modal = document.getElementById('yt-modal');
             const iframe = document.getElementById('yt-iframe');
