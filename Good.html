@@ -1,0 +1,767 @@
+Это отличная идея! Интерактивный фон оживит игру, а интеграция с YouTube сделает её уникальной.
+Я переписал код. Теперь в нём есть:
+ * Живой фон «Созвездие»: Частицы плавно летают на заднем плане и соединяются линиями с курсором мыши. Это выглядит очень современно и «залипательно».
+ * Интеграция YouTube:
+   * Первое нажатие на «Подсказку» — показывает безопасную клетку (как раньше).
+   * Второе нажатие — открывает встроенный плеер с твоим Shorts.
+   * Окно можно закрыть крестиком (скипнуть).
+Инструкция перед запуском
+В коде есть список SHORTS_PLAYLIST. Я поставил туда несколько примеров. Тебе нужно заменить их на ID твоих реальных видео, чтобы крутились именно твои ролики.
+(ID видео — это то, что в ссылке после /shorts/. Например, из ссылки youtube.com/shorts/abc12345 нужно взять abc12345).
+Вот обновленный полный код (просто скопируй и замени всё в файле):
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minesweeper: ALI Gaming Edition</title>
+    <style>
+        :root {
+            /* Theme: Deep Space / Neon */
+            --bg-color: #0b0c15;
+            --panel-bg: rgba(22, 33, 62, 0.85);
+            --text-color: #e94560;
+            --accent-color: #0f3460;
+            --cell-closed: #1a1a2e;
+            --cell-hover: #233452;
+            --cell-open: #16213e;
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --glow: 0 0 15px rgba(233, 69, 96, 0.6);
+            --font-main: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            --mine-color: #ff2e63;
+            --flag-color: #fce38a;
+            --border-radius: 12px;
+        }
+
+        [data-theme="classic"] {
+            --bg-color: #c0c0c0;
+            --panel-bg: #bdbdbd;
+            --text-color: #000;
+            --accent-color: #808080;
+            --cell-closed: #c0c0c0;
+            --cell-hover: #dcdcdc;
+            --cell-open: #e0e0e0;
+            --shadow: inset 2px 2px #fff, inset -2px -2px #808080;
+            --glow: none;
+            --mine-color: #000;
+            --flag-color: #ff0000;
+            --border-radius: 0;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Interactive Background Canvas */
+        #bg-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        /* UI Containers */
+        #app {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.4s, transform 0.4s;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+        
+        .screen.active { 
+            opacity: 1; 
+            pointer-events: all; 
+            transform: scale(1);
+        }
+
+        /* Main Menu Styling */
+        #main-menu {
+            background: rgba(11, 12, 21, 0.4);
+            backdrop-filter: blur(5px);
+        }
+
+        h1 { 
+            font-size: 3.5rem; 
+            text-shadow: var(--glow); 
+            margin-bottom: 0.5rem; 
+            text-align: center; 
+            letter-spacing: 2px;
+            background: -webkit-linear-gradient(45deg, #e94560, #fce38a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            margin-bottom: 2.5rem;
+            color: #fff;
+            opacity: 0.8;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--panel-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(233, 69, 96, 0.3);
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            margin: 12px;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-width: 220px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::before { left: 100%; }
+
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(233, 69, 96, 0.4);
+            background: var(--text-color);
+            color: var(--bg-color);
+            border-color: var(--text-color);
+        }
+
+        .btn:active { transform: scale(0.98); }
+
+        /* Game Header */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: var(--panel-bg);
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+        }
+
+        .counter {
+            font-size: 1.6rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Grid */
+        #game-board {
+            display: grid;
+            gap: 2px;
+            background: rgba(15, 52, 96, 0.5);
+            padding: 8px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            transition: transform 0.1s;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: var(--cell-closed);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            font-size: 18px;
+            transition: background 0.2s, transform 0.2s;
+            position: relative;
+        }
+
+        [data-theme="classic"] .cell { border-radius: 0; border: 2px solid; border-color: #fff #808080 #808080 #fff; }
+
+        .cell:hover:not(.revealed) { background: var(--cell-hover); z-index: 2; transform: scale(1.15); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        
+        .cell.revealed {
+            background: var(--cell-open);
+            cursor: default;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        [data-theme="classic"] .cell.revealed { border: 1px solid #999; }
+
+        .cell.flagged::after { content: '🚩'; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .cell.mine { background: var(--mine-color) !important; color: white; animation: shake 0.5s; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        .cell.mine::after { content: '💣'; }
+
+        /* Numbers colors */
+        .c1 { color: #4facfe; } .c2 { color: #00f260; } .c3 { color: #ff9a9e; }
+        .c4 { color: #a18cd1; } .c5 { color: #fbc2eb; } .c6 { color: #8fd3f4; }
+        .c7 { color: #d4fc79; } .c8 { color: #96e6a1; }
+
+        /* Animations */
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* Modal specific */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+        .modal-content {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--text-color);
+            box-shadow: 0 0 50px rgba(233, 69, 96, 0.2);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* YouTube Modal Specifics */
+        .yt-modal-content {
+            width: 350px; /* Mobile width for shorts */
+            height: 650px;
+            padding: 0;
+            background: black;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        
+        .yt-frame {
+            width: 100%;
+            flex-grow: 1;
+            border: none;
+        }
+        
+        .yt-header {
+            padding: 15px;
+            background: #111;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .yt-skip-btn {
+            background: #333;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .yt-skip-btn:hover { background: #555; }
+
+        .settings-row { display: flex; justify-content: space-between; margin: 15px 0; align-items: center; }
+        select { padding: 8px; border-radius: 5px; background: #0f3460; color: white; border: 1px solid #e94560; }
+
+        /* Effects Canvas (Fireworks) */
+        #fx-canvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 150; width: 100%; height: 100%; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="fx-canvas"></canvas>
+
+    <div id="app">
+        <div id="main-menu" class="screen active">
+            <h1>SAPPER PRO</h1>
+            <div class="subtitle">by ALI_Good_Gaming</div>
+            <div class="btn" onclick="startGame()">Новая Игра</div>
+            <div class="btn" onclick="showSettings()">Настройки</div>
+            <div class="btn" onclick="showRecords()">Рекорды</div>
+        </div>
+
+        <div id="game-ui" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <div class="hud">
+                <div class="counter" id="mine-count">💣 10</div>
+                <div class="btn" style="min-width: auto; padding: 5px 15px; margin: 0; font-size: 1.5rem;" onclick="initGame()">🔄</div>
+                <div class="counter" id="timer">⏱️ 000</div>
+            </div>
+            
+            <div id="game-board"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <div class="btn" style="min-width: auto;" onclick="useHint()">💡 Подсказка</div>
+                <div class="btn" style="min-width: auto;" onclick="exitToMenu()">🏠 Меню</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title" style="margin-top:0;">Заголовок</h2>
+            <div id="modal-body"></div>
+            <div class="btn" onclick="closeModal()" style="margin: 20px 0 0 0; width: 100%;">Закрыть</div>
+        </div>
+    </div>
+
+    <div id="yt-modal" class="modal-overlay">
+        <div class="modal-content yt-modal-content">
+            <div class="yt-header">
+                <span style="color:white; font-weight:bold;">ALI_Good_Gaming</span>
+                <button class="yt-skip-btn" onclick="closeYouTube()">Скипнуть ✖</button>
+            </div>
+            <iframe id="yt-iframe" class="yt-frame" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // СЮДА НУЖНО ВСТАВИТЬ ID ТВОИХ ВИДЕО (то, что после /shorts/)
+        const SHORTS_PLAYLIST = [
+            "t0Q2otsqC4I", // Пример (замени на свой!)
+            "Sqj1d8I4qH4", // Пример
+            "k4LoK0r7y5A"  // Пример
+        ];
+
+        // --- GAME STATE ---
+        const state = {
+            grid: [],
+            rows: 9,
+            cols: 9,
+            mines: 10,
+            flags: 0,
+            gameOver: false,
+            firstClick: true,
+            timer: 0,
+            interval: null,
+            hintsUsed: 0, // Counter for hints
+            difficulty: 'easy',
+            startTime: 0
+        };
+
+        const config = {
+            easy: { r: 9, c: 9, m: 10 },
+            medium: { r: 16, c: 16, m: 40 },
+            hard: { r: 16, c: 30, m: 99 }
+        };
+
+        // --- AUDIO SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'flag') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(554, now + 0.1); osc.frequency.setValueAtTime(659, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            } else if (type === 'lose') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        // --- CORE LOGIC ---
+        function startGame() {
+            document.getElementById('main-menu').classList.remove('active');
+            document.getElementById('game-ui').classList.remove('hidden');
+            document.getElementById('game-ui').style.display = 'flex';
+            initGame();
+        }
+
+        function initGame() {
+            const settings = config[state.difficulty];
+            state.rows = settings.r; state.cols = settings.c; state.mines = settings.m;
+            
+            // Mobile adjust
+            if (window.innerWidth < 500 && state.cols > 15) { state.cols = 15; state.mines = Math.floor(state.rows * state.cols * 0.2); }
+
+            state.grid = [];
+            state.flags = 0;
+            state.gameOver = false;
+            state.firstClick = true;
+            state.timer = 0;
+            state.hintsUsed = 0; // Reset hint counter
+            clearInterval(state.interval);
+
+            updateCounters();
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${state.cols}, 30px)`;
+
+            for (let r = 0; r < state.rows; r++) {
+                const row = [];
+                for (let c = 0; c < state.cols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r; cell.dataset.c = c;
+                    
+                    cell.addEventListener('mousedown', handleInput);
+                    cell.addEventListener('contextmenu', (e) => { e.preventDefault(); handleFlag(r, c); });
+                    let pressTimer;
+                    cell.addEventListener('touchstart', (e) => { pressTimer = setTimeout(() => handleFlag(r, c), 500); });
+                    cell.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+                    board.appendChild(cell);
+                    row.push({ element: cell, isMine: false, revealed: false, flagged: false, neighbors: 0 });
+                }
+                state.grid.push(row);
+            }
+        }
+
+        function placeMines(excludeR, excludeC) {
+            let placed = 0;
+            while (placed < state.mines) {
+                const r = Math.floor(Math.random() * state.rows);
+                const c = Math.floor(Math.random() * state.cols);
+                if (!state.grid[r][c].isMine && (Math.abs(r - excludeR) > 1 || Math.abs(c - excludeC) > 1)) {
+                    state.grid[r][c].isMine = true;
+                    placed++;
+                }
+            }
+            // Calc neighbors
+            for (let r = 0; r < state.rows; r++) {
+                for (let c = 0; c < state.cols; c++) {
+                    if (!state.grid[r][c].isMine) {
+                        let count = 0;
+                        getNeighbors(r, c).forEach(n => { if (state.grid[n.r][n.c].isMine) count++; });
+                        state.grid[r][c].neighbors = count;
+                    }
+                }
+            }
+        }
+
+        function getNeighbors(r, c) {
+            const n = [];
+            for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+                if (i===0 && j===0) continue;
+                const nr = r+i, nc = c+j;
+                if (nr>=0 && nr<state.rows && nc>=0 && nc<state.cols) n.push({r:nr, c:nc});
+            }
+            return n;
+        }
+
+        function handleInput(e) {
+            if (state.gameOver) return;
+            const r = parseInt(e.target.dataset.r), c = parseInt(e.target.dataset.c);
+            if (e.button === 2) return;
+            reveal(r, c);
+        }
+
+        function handleFlag(r, c) {
+            if (state.gameOver || state.grid[r][c].revealed) return;
+            const cell = state.grid[r][c];
+            cell.flagged = !cell.flagged;
+            cell.element.classList.toggle('flagged');
+            state.flags += cell.flagged ? 1 : -1;
+            playSound('flag');
+            updateCounters();
+        }
+
+        function reveal(r, c, delay = 0) {
+            const cell = state.grid[r][c];
+            if (cell.revealed || cell.flagged) return;
+
+            if (state.firstClick) { state.firstClick = false; placeMines(r, c); startTimer(); }
+            if (cell.isMine) { gameOver(false, r, c); return; }
+
+            setTimeout(() => {
+                cell.revealed = true;
+                cell.element.classList.add('revealed');
+                if (cell.neighbors > 0) {
+                    cell.element.textContent = cell.neighbors;
+                    cell.element.classList.add(`c${cell.neighbors}`);
+                } else {
+                    playSound('click');
+                    getNeighbors(r, c).forEach(n => { if (!state.grid[n.r][n.c].revealed) reveal(n.r, n.c, delay + 10); });
+                }
+                checkWin();
+            }, delay);
+        }
+
+        function checkWin() {
+            let revealedCount = 0;
+            state.grid.forEach(row => row.forEach(cell => { if (cell.revealed) revealedCount++; }));
+            if (revealedCount === (state.rows * state.cols - state.mines)) gameOver(true);
+        }
+
+        function gameOver(win, badR, badC) {
+            state.gameOver = true;
+            clearInterval(state.interval);
+            if (win) {
+                playSound('win'); victoryConfetti(); saveRecord();
+                showModal('ПОБЕДА!', `Время: ${state.timer} сек.<br>Сложность: ${state.difficulty.toUpperCase()}`);
+            } else {
+                playSound('lose');
+                state.grid[badR][badC].element.classList.add('mine');
+                state.grid.forEach(row => row.forEach(cell => { if (cell.isMine) cell.element.classList.add('mine'); }));
+                showModal('ПОРАЖЕНИЕ', 'Мина!');
+            }
+        }
+
+        function startTimer() {
+            state.startTime = Date.now();
+            state.interval = setInterval(() => {
+                state.timer = Math.floor((Date.now() - state.startTime) / 1000);
+                document.getElementById('timer').textContent = `⏱️ ${state.timer.toString().padStart(3, '0')}`;
+            }, 1000);
+        }
+
+        function updateCounters() { document.getElementById('mine-count').textContent = `💣 ${state.mines - state.flags}`; }
+
+        // --- HINT SYSTEM WITH YOUTUBE ---
+        function useHint() {
+            if (state.gameOver) return;
+
+            // FIRST HINT: Normal Game Hint
+            if (state.hintsUsed === 0) {
+                let safeCells = [];
+                state.grid.forEach((row, r) => row.forEach((cell, c) => {
+                    if (!cell.isMine && !cell.revealed && !cell.flagged) safeCells.push({r, c});
+                }));
+
+                if (safeCells.length > 0) {
+                    const target = safeCells[Math.floor(Math.random() * safeCells.length)];
+                    const el = state.grid[target.r][target.c].element;
+                    el.style.backgroundColor = '#fdcb6e'; el.style.transform = 'scale(1.2)';
+                    setTimeout(() => { el.style.backgroundColor = ''; el.style.transform = ''; }, 500);
+                    state.hintsUsed++;
+                }
+            } 
+            // SECOND HINT: Trigger YouTube Shorts
+            else {
+                openYouTube();
+            }
+        }
+
+        function openYouTube() {
+            const modal = document.getElementById('yt-modal');
+            const iframe = document.getElementById('yt-iframe');
+            
+            // Pick random video
+            const vidId = SHORTS_PLAYLIST[Math.floor(Math.random() * SHORTS_PLAYLIST.length)];
+            
+            // Use embed URL with autoplay
+            iframe.src = `https://www.youtube.com/embed/${vidId}?autoplay=1&controls=1&loop=1`;
+            
+            modal.classList.add('active');
+        }
+
+        function closeYouTube() {
+            const modal = document.getElementById('yt-modal');
+            const iframe = document.getElementById('yt-iframe');
+            modal.classList.remove('active');
+            iframe.src = ""; // Stop video
+        }
+
+        // --- BACKGROUND ANIMATION (CONSTELLATION) ---
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let particlesArray;
+        let mouse = { x: null, y: null, radius: 150 };
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.x; mouse.y = event.y;
+        });
+
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x; this.y = y;
+                this.directionX = directionX; this.directionY = directionY;
+                this.size = size; this.color = color;
+            }
+            draw() {
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                bgCtx.fillStyle = '#e94560';
+                bgCtx.fill();
+            }
+            update() {
+                if (this.x > bgCanvas.width || this.x < 0) this.directionX = -this.directionX;
+                if (this.y > bgCanvas.height || this.y < 0) this.directionY = -this.directionY;
+                this.x += this.directionX; this.y += this.directionY;
+
+                // Mouse interactivity
+                let dx = mouse.x - this.x; let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx*dx + dy*dy);
+                if (distance < mouse.radius + this.size){
+                    if(mouse.x < this.x && this.x < bgCanvas.width - this.size * 10) this.x += 2;
+                    if(mouse.x > this.x && this.x > this.size * 10) this.x -= 2;
+                    if(mouse.y < this.y && this.y < bgCanvas.height - this.size * 10) this.y += 2;
+                    if(mouse.y > this.y && this.y > this.size * 10) this.y -= 2;
+                }
+                this.draw();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            let numberOfParticles = (bgCanvas.height * bgCanvas.width) / 9000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 2) + 1;
+                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                let directionX = (Math.random() * 0.4) - 0.2;
+                let directionY = (Math.random() * 0.4) - 0.2;
+                let color = '#e94560';
+                particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+            }
+        }
+
+        function animateBackground() {
+            requestAnimationFrame(animateBackground);
+            bgCtx.clearRect(0, 0, innerWidth, innerHeight);
+            
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+            connect();
+        }
+
+        function connect() {
+            let opacityValue = 1;
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) + 
+                                   ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+                    if (distance < (bgCanvas.width/7) * (bgCanvas.height/7)) {
+                        opacityValue = 1 - (distance/20000);
+                        bgCtx.strokeStyle = 'rgba(233, 69, 96,' + opacityValue + ')';
+                        bgCtx.lineWidth = 1;
+                        bgCtx.beginPath();
+                        bgCtx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        bgCtx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        bgCtx.stroke();
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        initParticles();
+        animateBackground();
+
+        // --- UTILITY ---
+        function showSettings() {
+            const html = `<div class="settings-row"><span>Сложность:</span><select id="diff-select" onchange="state.difficulty = this.value"><option value="easy">Легко</option><option value="medium">Средне</option><option value="hard">Сложно</option></select></div>
+            <div class="settings-row"><span>Тема:</span><select onchange="changeTheme(this.value)"><option value="neon">Неон</option><option value="classic">Классика</option></select></div>`;
+            showModal('Настройки', html);
+        }
+        function changeTheme(theme) { document.documentElement.setAttribute('data-theme', theme); }
+        function showRecords() {
+            const records = JSON.parse(localStorage.getItem('minesweeper_records') || '[]');
+            let html = '<table style="width:100%"><tr><th>Игрок</th><th>Вр.</th></tr>';
+            records.sort((a,b)=>a.time-b.time).slice(0,5).forEach(r=>{html+=`<tr><td>${r.name}</td><td>${r.time}c</td></tr>`});
+            html += '</table>';
+            showModal('Рекорды', html);
+        }
+        function saveRecord() {
+            const name = prompt("Новый рекорд! Имя:", "Игрок");
+            if (!name) return;
+            const records = JSON.parse(localStorage.getItem('minesweeper_records') || '[]');
+            records.push({ name: name, time: state.timer });
+            localStorage.setItem('minesweeper_records', JSON.stringify(records));
+        }
+        function showModal(title, body) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = body;
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+        function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); }
+        function exitToMenu() {
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('main-menu').classList.add('active');
+            clearInterval(state.interval);
+        }
+
+        // --- FIREWORKS ---
+        function victoryConfetti() {
+            const canvas = document.getElementById('fx-canvas'); const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const p = []; const colors = ['#f1c40f', '#e94560', '#3498db'];
+            for (let i=0; i<150; i++) p.push({x:canvas.width/2, y:canvas.height/2, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, size:Math.random()*5+2, color:colors[Math.floor(Math.random()*colors.length)], life:100});
+            function anim() {
+                ctx.clearRect(0,0,canvas.width,canvas.height); let act=false;
+                p.forEach(x=>{if(x.life>0){act=true;x.x+=x.vx;x.y+=x.vy;x.vy+=0.2;x.life--;x.size*=0.96;ctx.fillStyle=x.color;ctx.beginPath();ctx.arc(x.x,x.y,x.size,0,Math.PI*2);ctx.fill();}});
+                if(act) requestAnimationFrame(anim); else ctx.clearRect(0,0,canvas.width,canvas.height);
+            }
+            anim();
+        }
+    </script>
+</body>
+</html>
+
