@@ -63,13 +63,13 @@
             letter-spacing: -2px;
         }
 
-        .brand-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary); margin-bottom: 30px; letter-spacing: 5px; text-shadow: 0 0 10px var(--primary-glow); }
+        .brand-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary); margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 10px var(--primary-glow); }
 
-        .menu-grid { display: flex; flex-direction: column; gap: 15px; width: 300px; }
+        .menu-grid { display: flex; flex-direction: column; gap: 12px; width: 300px; }
 
         .action-btn {
             background: var(--bg-card); border: 1px solid var(--cell-border);
-            color: #fff; padding: 16px; font-family: var(--font-display);
+            color: #fff; padding: 14px; font-family: var(--font-display);
             border-radius: 12px; cursor: pointer; transition: var(--transition);
             text-transform: uppercase; font-size: 0.85rem;
             display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -77,6 +77,17 @@
         }
         .action-btn:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 6px 20px var(--primary-glow); }
         .action-btn.hero { background: var(--primary); color: #000; border: none; font-weight: 800; }
+
+        /* СОЦ СЕТИ */
+        .social-row { display: flex; gap: 10px; margin-top: 25px; width: 300px; }
+        .social-btn {
+            flex: 1; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; color: white; background: var(--bg-card); border: 1px solid var(--cell-border);
+            transition: var(--transition); cursor: pointer; text-decoration: none;
+        }
+        .social-btn.yt:hover { background: #ff0000; border-color: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
+        .social-btn.tt:hover { background: #000; border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+        .social-btn.tg:hover { background: #0088cc; border-color: #0088cc; box-shadow: 0 0 15px rgba(0,136,204,0.4); }
 
         .game-top-bar {
             width: 95%; display: flex; justify-content: space-between; align-items: center;
@@ -167,6 +178,13 @@
                 <button class="action-btn" id="btn-records" onclick="UI.showRecords()"><i class="fas fa-trophy"></i> РЕКОРДЫ</button>
                 <button class="action-btn" id="btn-settings" onclick="UI.openSettings()"><i class="fas fa-cog"></i> НАСТРОЙКИ</button>
             </nav>
+            
+            <!-- СОЦ СЕТИ -->
+            <div class="social-row">
+                <a href="https://youtube.com/@ALI_GOOD_GAMING" target="_blank" class="social-btn yt"><i class="fab fa-youtube"></i></a>
+                <a href="https://tiktok.com/@ali_good_gaming" target="_blank" class="social-btn tt"><i class="fab fa-tiktok"></i></a>
+                <a href="https://t.me/ali_good_gaming" target="_blank" class="social-btn tg"><i class="fab fa-telegram-plane"></i></a>
+            </div>
         </section>
 
         <!-- ЭКРАН ИГРЫ -->
@@ -377,7 +395,6 @@ const GameCore = {
         }
     },
 
-    // ПОСТЕПЕННОЕ ОТКРЫТИЕ (Wave effect)
     openCascade(r, c, delay = 0) {
         const cell = this.grid[r][c];
         if(cell.open || cell.flag) return;
@@ -536,21 +553,31 @@ const UI = {
 };
 
 /**
- * ИНТЕРАКТИВНЫЙ ФОН
+ * ИНТЕРАКТИВНЫЙ ФОН С РЕАКЦИЕЙ НА МЫШЬ
  */
 const Particles = {
     canvas: document.getElementById('particle-canvas'),
-    ctx: null, dots: [],
+    ctx: null, dots: [], mouse: { x: null, y: null, radius: 150 },
     init() {
         this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.addEventListener('resize', () => this.resize());
-        for(let i=0; i<80; i++) {
+        window.addEventListener('mousemove', (e) => {
+            this.mouse.x = e.x;
+            this.mouse.y = e.y;
+        });
+        window.addEventListener('mouseout', () => {
+            this.mouse.x = null;
+            this.mouse.y = null;
+        });
+
+        for(let i=0; i<100; i++) {
             this.dots.push({
                 x: Math.random() * this.canvas.width,
                 y: Math.random() * this.canvas.height,
-                vx: (Math.random() - 0.5) * 0.8,
-                vy: (Math.random() - 0.5) * 0.8,
+                baseX: 0, baseY: 0,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
                 size: Math.random() * 2 + 1
             });
         }
@@ -569,11 +596,27 @@ const Particles = {
 
         for(let i=0; i<this.dots.length; i++) {
             let p = this.dots[i];
+            
+            // Физика движения
             p.x += p.vx; p.y += p.vy;
             if(p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
             if(p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
 
-            this.ctx.globalAlpha = 0.4;
+            // Реакция на мышь
+            if(this.mouse.x !== null) {
+                let dx = this.mouse.x - p.x;
+                let dy = this.mouse.y - p.y;
+                let distance = Math.hypot(dx, dy);
+                if(distance < this.mouse.radius) {
+                    const force = (this.mouse.radius - distance) / this.mouse.radius;
+                    const directionX = dx / distance;
+                    const directionY = dy / distance;
+                    p.x -= directionX * force * 5;
+                    p.y -= directionY * force * 5;
+                }
+            }
+
+            this.ctx.globalAlpha = 0.5;
             this.ctx.beginPath();
             this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
             this.ctx.fill();
