@@ -9,564 +9,583 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* ================================================================
-           1. АРХИТЕКТУРА ЦВЕТОВ И ТЕМ (CSS VARIABLES)
-           ================================================================
-        */
         :root {
-            /* Базовый фон: Глубокий матовый сине-черный (для идеальной читаемости) */
-            --bg-body: #161821;
-            
-            /* Цвета игрового пространства (Непрозрачные) */
+            --bg-body: #0a0b10;
             --bg-card: #12141d;
             --bg-board: #050608;
-            
-            /* Акцентный цвет: Cyber Red / Pink */
-            --primary: #e94560;
-            --primary-glow: rgba(233, 69, 96, 0.5);
-            --primary-dark: #951c30;
-
-            /* Текст */
+            --primary: #00d2ff;
+            --primary-glow: rgba(0, 210, 255, 0.5);
             --text-main: #ffffff;
-            --text-dim: #71758e;
-            
-            /* Ячейки */
             --cell-idle: #1c1f2b;
             --cell-border: #2d3142;
-            --cell-hover: #363b53;
-
-            /* Шрифты */
             --font-display: 'Orbitron', sans-serif;
             --font-main: 'Montserrat', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            
-            /* Тайминги */
-            --trans-fast: 0.15s ease;
-            --trans-norm: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Системы динамических тем */
-        [data-theme="ocean"] { --primary: #00d2ff; --primary-glow: rgba(0, 210, 255, 0.5); --primary-dark: #0086a3; }
-        [data-theme="emerald"] { --primary: #00ff88; --primary-glow: rgba(0, 255, 136, 0.5); --primary-dark: #009e54; }
-        [data-theme="gold"] { --primary: #f1c40f; --primary-glow: rgba(241, 196, 15, 0.5); --primary-dark: #a38500; }
-        [data-theme="blood"] { --primary: #ff0040; --primary-glow: rgba(255, 0, 64, 0.5); --primary-dark: #9e0027; }
+        /* ТЕМЫ */
+        [data-theme="neon"] { --primary: #e94560; --primary-glow: rgba(233, 69, 96, 0.5); }
+        [data-theme="ocean"] { --primary: #00d2ff; --primary-glow: rgba(0, 210, 255, 0.5); }
+        [data-theme="emerald"] { --primary: #00ff88; --primary-glow: rgba(0, 255, 136, 0.5); }
+        [data-theme="gold"] { --primary: #f1c40f; --primary-glow: rgba(241, 196, 15, 0.5); }
+        [data-theme="blood"] { --primary: #ff4757; --primary-glow: rgba(255, 71, 87, 0.5); }
 
-        /* ================================================================
-           2. ГЛОБАЛЬНЫЕ СТИЛИ (RESET & BODY)
-           ================================================================
-        */
-        * {
-            box-sizing: border-box;
-            margin: 0; padding: 0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            outline: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
             font-family: var(--font-main);
-            height: 100vh;
-            width: 100vw;
+            height: 100vh; width: 100vw;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
+            display: flex; justify-content: center; align-items: center;
+            transition: background 0.5s ease;
         }
 
-                /* Интерактивный фон (Canvas) */
-        #particle-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; 
-            height: 100vh;
-            /* Ставим отрицательный индекс, чтобы фон ГАРАНТИРОВАННО был сзади */
-            z-index: -1; 
-            /* pointer-events: none обязателен, чтобы клики проходили сквозь него */
-            pointer-events: none;
-            background-color: #0a0b10;
-        }
+        #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
-        /* Главный контейнер приложения */
-        #app-root {
-            position: relative;
-            /* z-index выше чем у холста */
-            z-index: 1; 
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            perspective: 1000px;
-            /* Убеждаемся, что фон контейнера прозрачный, иначе он перекроет частицы */
-            background: transparent !important;
-        }
-        /* ================================================================
-           3. КОМПОНЕНТЫ ИНТЕРФЕЙСА (UI)
-           ================================================================
-        */
-        .screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 650px;
-            animation: screenEntry 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+        #app-root { position: relative; z-index: 10; width: 100%; display: flex; flex-direction: column; align-items: center; }
 
-        .screen.active { display: flex; }
-
-        @keyframes screenEntry {
-            from { opacity: 0; transform: scale(0.95) translateY(30px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* Логотип и брендинг */
-        .logo-group {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 600px; opacity: 0; transform: translateY(20px); transition: var(--transition); }
+        .screen.active { display: flex; opacity: 1; transform: translateY(0); }
 
         .main-logo {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 12vw, 6rem);
+            font-size: clamp(2.5rem, 10vw, 4.5rem);
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -2px;
-            background: linear-gradient(to bottom, #fff 30%, var(--primary) 100%);
+            background: linear-gradient(to bottom, #fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px var(--primary-glow));
-            line-height: 0.85;
+            filter: drop-shadow(0 0 15px var(--primary-glow));
+            margin-bottom: 5px;
+            letter-spacing: -2px;
         }
 
-        .brand-sub {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            letter-spacing: 10px;
-            color: var(--primary);
-            text-transform: uppercase;
-            margin-top: 15px;
-            font-weight: 700;
-            opacity: 0.9;
-        }
+        .brand-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--primary); margin-bottom: 30px; letter-spacing: 5px; text-shadow: 0 0 10px var(--primary-glow); }
 
-        /* Кнопки управления */
-        .menu-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 85%;
-        }
+        .menu-grid { display: flex; flex-direction: column; gap: 15px; width: 300px; }
 
         .action-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--cell-border);
-            color: #fff;
-            padding: 20px 30px;
-            font-family: var(--font-display);
-            font-size: 1rem;
-            border-radius: 16px;
-            cursor: pointer;
-            transition: var(--trans-norm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-            overflow: hidden;
+            background: var(--bg-card); border: 1px solid var(--cell-border);
+            color: #fff; padding: 16px; font-family: var(--font-display);
+            border-radius: 12px; cursor: pointer; transition: var(--transition);
+            text-transform: uppercase; font-size: 0.85rem;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
+        .action-btn:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 6px 20px var(--primary-glow); }
+        .action-btn.hero { background: var(--primary); color: #000; border: none; font-weight: 800; }
 
-        .action-btn::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transition: 0.5s;
-        }
-
-        .action-btn:hover {
-            border-color: var(--primary);
-            background: #1a1d29;
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        }
-
-        .action-btn:hover::after { left: 100%; }
-
-        .action-btn.hero {
-            background: var(--primary);
-            border: none;
-            font-weight: 900;
-            box-shadow: 0 0 30px var(--primary-glow);
-        }
-
-        .social-bar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .social-link {
-            width: 50px; height: 50px;
-            border-radius: 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--cell-border);
-            display: flex;
-            justify-content: center; align-items: center;
-            color: #fff; font-size: 1.2rem;
-            text-decoration: none;
-            transition: var(--trans-norm);
-        }
-
-        .social-link:hover {
-            background: var(--primary);
-            color: #fff;
-            transform: rotate(-10deg) translateY(-5px);
-            box-shadow: 0 5px 15px var(--primary-glow);
-        }
-
-        /* ================================================================
-           4. ИГРОВОЙ МОДУЛЬ (GAMEPLAY)
-           ================================================================
-        */
         .game-top-bar {
-            width: 95%;
-            max-width: 500px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-card);
-            padding: 15px 25px;
-            border-radius: 20px;
-            border: 1px solid var(--cell-border);
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 95%; display: flex; justify-content: space-between; align-items: center;
+            background: var(--bg-card); padding: 12px 20px;
+            border-radius: 15px; border: 1px solid var(--cell-border); margin-bottom: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
-        .stat-block { display: flex; flex-direction: column; align-items: center; }
-        .stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 1px; }
-        .stat-value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-
-        #board-frame {
-            background: var(--bg-board);
-            padding: 12px;
-            border-radius: 18px;
-            border: 2px solid var(--cell-border);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            position: relative;
-        }
+        .stat-value { font-family: var(--font-mono); font-size: 1.2rem; color: var(--primary); font-weight: bold; }
 
         #game-grid {
-            display: grid;
-            gap: 4px;
+            display: grid; gap: 5px; background: var(--bg-board);
+            padding: 10px; border-radius: 12px; border: 1px solid var(--cell-border);
+            max-width: 98vw; max-height: 70vh; overflow: auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
 
         .game-cell {
-            width: 42px; height: 42px;
-            background: var(--cell-idle);
-            border: 1px solid var(--cell-border);
-            border-radius: 6px;
-            display: flex;
-            justify-content: center; align-items: center;
-            font-weight: 900; font-size: 1.2rem;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-            position: relative;
+            width: 34px; height: 34px; background: var(--cell-idle); border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 900; cursor: pointer; font-size: 1rem;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.03);
+            perspective: 1000px;
+        }
+        .game-cell:active { transform: scale(0.8); }
+        
+        .game-cell.is-revealed { 
+            background: rgba(255,255,255,0.05); 
+            cursor: default; 
+            border-color: transparent;
+            animation: revealPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        .game-cell:hover:not(.is-revealed) {
-            background: var(--cell-hover);
-            transform: scale(1.08);
-            border-color: var(--primary);
-            z-index: 5;
-            box-shadow: 0 0 15px rgba(var(--primary-glow), 0.3);
+        @keyframes revealPop {
+            0% { transform: scale(0.3) rotateX(-90deg); opacity: 0; filter: brightness(2); }
+            100% { transform: scale(1) rotateX(0deg); opacity: 1; filter: brightness(1); }
         }
 
-        .game-cell.is-revealed {
-            background: rgba(0,0,0,0.4);
-            border-color: rgba(255,255,255,0.03);
-            cursor: default;
-        }
+        .game-cell.is-mine { background: #ff4757 !important; color: white; animation: shake 0.4s ease; box-shadow: 0 0 20px #ff4757; }
+        .game-cell.is-flagged::after { content: '🚩'; font-size: 0.8rem; animation: pop 0.2s forwards; }
 
-        .game-cell.is-mine {
-            background: var(--primary) !important;
-            color: #fff;
-            box-shadow: 0 0 20px var(--primary);
-            animation: boomShake 0.4s ease-in-out;
-        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1.2); } }
 
-        @keyframes boomShake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px) rotate(-5deg); }
-            75% { transform: translateX(5px) rotate(5deg); }
-        }
-
-        .game-cell.is-flagged::after {
-            content: '🚩';
-            font-size: 1.1rem;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-        }
-
-        /* Цвета цифр */
-        .n-1 { color: #3498db; } .n-2 { color: #2ecc71; } .n-3 { color: #e74c3c; }
-        .n-4 { color: #9b59b6; } .n-5 { color: #f1c40f; } .n-6 { color: #1abc9c; }
-
-        /* ================================================================
-           5. МОДАЛЬНЫЕ ОКНА И ВИДЕО (MODALS)
-           ================================================================
-        */
         .modal-wrap {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            display: none; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 0.4s;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
         }
-        .modal-wrap.visible { display: flex; opacity: 1; }
 
         .modal-body {
-            background: var(--bg-card);
-            border: 1px solid var(--primary);
-            width: 90%; max-width: 420px;
-            padding: 35px; border-radius: 24px;
-            text-align: center;
-            box-shadow: 0 0 60px rgba(0,0,0,1), 0 0 20px var(--primary-glow);
+            background: var(--bg-card); border: 2px solid var(--primary);
+            padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px;
+            animation: modalIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .config-select {
+            width: 100%; background: #000; color: white; border: 1px solid var(--cell-border);
+            padding: 12px; border-radius: 10px; margin-bottom: 15px; font-family: var(--font-main); outline: none;
         }
 
-        #shorts-player-view {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2000;
-            display: none; flex-direction: column;
-        }
-        #shorts-player-view.visible { display: flex; }
-
-        .player-controls {
-            padding: 15px 25px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: #0a0a0a; border-bottom: 1px solid #222;
+        #hint-btn { position: relative; background: linear-gradient(45deg, #f1c40f, #e67e22); color: #000; font-weight: 800; border: none; }
+        .hint-count {
+            position: absolute; top: -8px; right: -8px; background: #ff4757; color: #fff;
+            padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; border: 2px solid var(--bg-card);
         }
 
-        .timer-badge {
-            background: var(--primary);
-            color: #fff; padding: 6px 14px; border-radius: 8px;
-            font-family: var(--font-mono); font-weight: 700;
-        }
+        .video-container { width: 100%; aspect-ratio: 9/16; background: #000; border-radius: 12px; margin: 15px 0; overflow: hidden; position: relative; }
+        .ad-timer { position: absolute; bottom: 15px; left: 15px; background: rgba(0,0,0,0.85); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; color: var(--primary); }
 
-        iframe#yt-frame { width: 100%; flex-grow: 1; border: none; }
-
-        /* ================================================================
-           6. АДАПТИВНОСТЬ
-           ================================================================
-        */
-        @media (max-width: 480px) {
-            .game-cell { width: 35px; height: 35px; font-size: 1rem; }
-            .main-logo { font-size: 3.8rem; }
-            .brand-sub { font-size: 0.65rem; letter-spacing: 6px; }
-            .action-btn { padding: 16px 20px; font-size: 0.9rem; }
-        }
+        .n-1 { color: #3498db; } .n-2 { color: #2ecc71; } .n-3 { color: #e74c3c; } .n-4 { color: #9b59b6; }
+        .n-5 { color: #f1c40f; } .n-6 { color: #1abc9c; } .n-7 { color: #ecf0f1; } .n-8 { color: #95a5a6; }
     </style>
 </head>
-<body data-theme="neon">
+<body data-theme="ocean">
 
     <canvas id="particle-canvas"></canvas>
 
     <div id="app-root">
-        
+        <!-- ГЛАВНОЕ МЕНЮ -->
         <section id="menu-screen" class="screen active">
-            <div class="logo-group">
-                <h1 class="main-logo">Sapper</h1>
-                <div class="brand-sub">ALI_GOOD_GAMING</div>
-            </div>
-
-            <div class="social-bar">
-                <a href="https://youtube.com/@ali-gg" target="_blank" class="social-link"><i class="fab fa-youtube"></i></a>
-                <a href="https://t.me/aligoodgaming" target="_blank" class="social-link"><i class="fab fa-telegram"></i></a>
-                <a href="https://tiktok.com/@ali_goodgaming" target="_blank" class="social-link"><i class="fab fa-tiktok"></i></a>
-            </div>
-
+            <h1 class="main-logo">Sapper</h1>
+            <div class="brand-sub">ALI_GOOD_GAMING</div>
             <nav class="menu-grid">
-                <button class="action-btn hero" onclick="Engine.launchGame()">
-                    <i class="fas fa-play-circle"></i> <span data-i18n="play">Играть</span>
-                </button>
-                <button class="action-btn" onclick="UI.openSettings()">
-                    <i class="fas fa-sliders-h"></i> <span data-i18n="settings">Настройки</span>
-                </button>
-                <button class="action-btn" onclick="UI.openRecords()">
-                    <i class="fas fa-award"></i> <span data-i18n="records">Рекорды</span>
-                </button>
+                <button class="action-btn hero" id="btn-play" onclick="Engine.launchGame()"><i class="fas fa-play"></i> ИГРАТЬ</button>
+                <button class="action-btn" id="btn-records" onclick="UI.showRecords()"><i class="fas fa-trophy"></i> РЕКОРДЫ</button>
+                <button class="action-btn" id="btn-settings" onclick="UI.openSettings()"><i class="fas fa-cog"></i> НАСТРОЙКИ</button>
             </nav>
         </section>
 
+        <!-- ЭКРАН ИГРЫ -->
         <section id="game-screen" class="screen">
             <header class="game-top-bar">
-                <div class="stat-block">
-                    <div class="stat-label" data-i18n="mines">Мины</div>
-                    <div id="mine-display" class="stat-value">💣 010</div>
-                </div>
-
-                <div id="restart-trigger" class="action-btn" style="width: 55px; height: 55px; border-radius: 50%; padding: 0;" onclick="GameCore.reset()">
-                    <i class="fas fa-sync-alt" style="color: var(--primary);"></i>
-                </div>
-
-                <div class="stat-block">
-                    <div class="stat-label" data-i18n="time">Время</div>
-                    <div id="time-display" class="stat-value">⏳ 00:00</div>
-                </div>
+                <div id="mine-display" class="stat-value">💣 0</div>
+                <div class="action-btn" style="padding: 10px; border-radius: 50%" onclick="GameCore.reset(); Engine.play('click')"><i class="fas fa-redo"></i></div>
+                <div id="time-display" class="stat-value">⏳ 00:00</div>
             </header>
-
-            <div id="board-frame">
-                <div id="game-grid"></div>
-            </div>
-
-            <footer style="margin-top: 30px; display: flex; gap: 15px; width: 90%; max-width: 500px;">
-                <button class="action-btn" style="flex: 1;" onclick="GameCore.requestHint()">
-                    <i class="fas fa-lightbulb"></i> <span data-i18n="hint">Хинт</span>
-                </button>
-                <button class="action-btn" style="flex: 1;" onclick="Engine.exitToMenu()">
-                    <i class="fas fa-door-open"></i> <span data-i18n="menu">Выход</span>
+            <div id="game-grid"></div>
+            <footer style="margin-top: 20px; display: flex; gap: 12px; width: 95%;">
+                <button class="action-btn" style="flex: 1;" id="btn-menu" onclick="Engine.exitToMenu()">МЕНЮ</button>
+                <button class="action-btn" id="hint-btn" style="flex: 1;" onclick="GameCore.useHint()">
+                    <i class="fas fa-lightbulb"></i> <span id="label-hint">ПОМОЩЬ</span>
+                    <div class="hint-count" id="hint-count-badge">0</div>
                 </button>
             </footer>
         </section>
-
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО -->
     <div id="global-modal" class="modal-wrap">
-        <div class="modal-body">
-            <h2 id="modal-title" style="font-family: var(--font-display); color: var(--primary); margin-bottom: 20px; font-size: 1.8rem;">MESSAGE</h2>
-            <div id="modal-html-content" style="color: var(--text-dim); line-height: 1.6; margin-bottom: 25px;"></div>
-            <button class="action-btn hero" style="width: 100%;" onclick="UI.closeModal()">OK</button>
-        </div>
-    </div>
-
-    <div id="shorts-player-view">
-        <div class="player-controls">
-            <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--primary);">EXCLUSIVE HINT CONTENT</div>
-            <div id="video-countdown" class="timer-badge">15s</div>
-            <div onclick="VideoGuard.close()" style="cursor: pointer; font-size: 1.6rem; color: #fff;"><i class="fas fa-times-circle"></i></div>
-        </div>
-        <iframe id="yt-frame" src=""></iframe>
+        <div class="modal-body" id="modal-content"></div>
     </div>
 
 <script>
 /**
- * ========================================================================
- * 1. CONFIGURATION & LOCALIZATION
- * ========================================================================
+ * СИСТЕМА ЛОКАЛИЗАЦИИ
  */
 const CONFIG = {
-    RU: {
-        play: "Играть", settings: "Настройки", records: "Рекорды",
-        mines: "Мины", time: "Время", hint: "Помощь", menu: "Меню",
-        win: "ПОБЕДА! 🎉", lose: "БУМ! 💀", easy: "Легко", med: "Средне", hard: "Эксперт",
-        unlocked: "Хинт разблокирован!", watching: "Смотри: "
+    ru: {
+        play: "ИГРАТЬ", records: "РЕКОРДЫ", settings: "НАСТРОЙКИ", menu: "МЕНЮ",
+        hint: "ПОМОЩЬ", win: "ПОБЕДА!", lose: "БУМ!", time: "Время: ", scale: "МАСШТАБ ПОЛЯ",
+        theme: "ЦВЕТОВАЯ ТЕМА", lang: "ЯЗЫК", adTitle: "Нужна помощь?", 
+        adText: "Посмотри ролик ALI_Good_Gaming, чтобы получить +1 подсказку.",
+        watch: "СМОТРЕТЬ", cancel: "ОТМЕНА", back: "ОК", save: "СОХРАНИТЬ",
+        empty: "Список пуст", audio: "ЗВУКОВЫЕ ЭФФЕКТЫ", on: "ВКЛ", off: "ВЫКЛ"
     },
-    EN: {
-        play: "Play", settings: "Settings", records: "Records",
-        mines: "Mines", time: "Time", hint: "Hint", menu: "Menu",
-        win: "VICTORY! 🎉", lose: "BOOM! 💀", easy: "Easy", med: "Medium", hard: "Expert",
-        unlocked: "Hint Unlocked!", watching: "Watch: "
+    en: {
+        play: "PLAY", records: "RECORDS", settings: "SETTINGS", menu: "MENU",
+        hint: "HINT", win: "VICTORY!", lose: "BOOM!", time: "Time: ", scale: "FIELD SCALE",
+        theme: "COLOR THEME", lang: "LANGUAGE", adTitle: "Need Help?", 
+        adText: "Watch ALI_Good_Gaming's short to get +1 hint.",
+        watch: "WATCH", cancel: "CANCEL", back: "OK", save: "SAVE",
+        empty: "List is empty", audio: "SOUND EFFECTS", on: "ON", off: "OFF"
     }
 };
 
-const SHORTS_LIBRARY = [
-    "z0yLX-BKyQo", "YDCA39Ns8vo", "qxuAyYfXtRA", "Np20JpunLJY", "zwhkYTpjt3A",
-    "t0Q2otsqC4I", "Sqj1d8I4qH4", "v33-kGj7A7M", "5hS9M2lRToA", "XJ7p9F4M_7Y",
-    "eG_FqK8-0W8", "X_y59fA8W_M"
-];
+const DIFFICULTIES = {
+    easy: { rows: 10, cols: 10, mines: 10, hints: 3 },
+    med: { rows: 16, cols: 16, mines: 40, hints: 10 },
+    hard: { rows: 20, cols: 20, mines: 80, hints: 15 }
+};
+
+const SHORTS_DB = ["dQw4w9WgXcQ", "3JZ_D3ELwOQ", "9bZkp7q19f0", "2Vv-BfVoq4g", "kJQP7kiw5Fk"];
 
 /**
+ * ЯДРО ПРИЛОЖЕНИЯ
+ */
+const Engine = {
+    lang: 'ru',
+    diff: 'easy',
+    audio: true,
+
+    init() {
+        this.updateLang();
+        Particles.init();
+    },
+
+    updateLang() {
+        const t = CONFIG[this.lang];
+        document.getElementById('btn-play').innerHTML = `<i class="fas fa-play"></i> ${t.play}`;
+        document.getElementById('btn-records').innerHTML = `<i class="fas fa-trophy"></i> ${t.records}`;
+        document.getElementById('btn-settings').innerHTML = `<i class="fas fa-cog"></i> ${t.settings}`;
+        document.getElementById('btn-menu').textContent = t.menu;
+        document.getElementById('label-hint').textContent = t.hint;
+    },
+
+    play(type) {
+        if(!this.audio) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            if(type === 'click') {
+                osc.frequency.setValueAtTime(500, ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start(); osc.stop(ctx.currentTime + 0.1);
+            } else if(type === 'boom') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1, ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+                osc.start(); osc.stop(ctx.currentTime + 0.5);
+            }
+        } catch(e) {}
+    },
+
+    launchGame() {
+        this.play('click');
+        document.getElementById('menu-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        GameCore.reset();
+    },
+
+    exitToMenu() {
+        this.play('click');
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('menu-screen').classList.add('active');
+        clearInterval(GameCore.timer);
+    }
+};
+
 /**
- * ========================================================================
- * 2. BACKGROUND ENGINE (PARTICLES) - UPGRADED NEON VERSION
- * ========================================================================
+ * ЛОГИКА ИГРЫ
+ */
+const GameCore = {
+    grid: [], active: false, timer: null, sec: 0, first: true, flags: 0, hints: 0,
+
+    reset() {
+        const d = DIFFICULTIES[Engine.diff];
+        this.active = true; this.first = true; this.sec = 0; this.flags = 0;
+        this.hints = d.hints;
+        clearInterval(this.timer);
+        this.updateHUD();
+        this.build();
+    },
+
+    build() {
+        const d = DIFFICULTIES[Engine.diff];
+        const container = document.getElementById('game-grid');
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${d.cols}, 1fr)`;
+        this.grid = [];
+        for(let r=0; r<d.rows; r++) {
+            this.grid[r] = [];
+            for(let c=0; c<d.cols; c++) {
+                const el = document.createElement('div');
+                el.className = 'game-cell';
+                el.onclick = () => this.click(r, c);
+                el.oncontextmenu = (e) => { e.preventDefault(); this.flag(r, c); };
+                container.appendChild(el);
+                this.grid[r][c] = { r, c, mine: false, open: false, flag: false, count: 0, el };
+            }
+        }
+    },
+
+    click(r, c) {
+        if(!this.active || this.grid[r][c].flag || this.grid[r][c].open) return;
+        
+        if(this.first) {
+            Engine.play('click');
+            this.first = false;
+            this.generate(r, c);
+            this.timer = setInterval(() => { this.sec++; this.updateHUD(); }, 1000);
+        }
+        
+        const cell = this.grid[r][c];
+        if(cell.mine) {
+            Engine.play('boom');
+            this.revealCellUI(cell);
+            this.gameOver(false);
+        } else {
+            Engine.play('click');
+            this.openCascade(r, c);
+        }
+        this.checkWin();
+    },
+
+    generate(safeR, safeC) {
+        const d = DIFFICULTIES[Engine.diff];
+        let placed = 0;
+        while(placed < d.mines) {
+            let rr = Math.floor(Math.random() * d.rows);
+            let cc = Math.floor(Math.random() * d.cols);
+            if(!this.grid[rr][cc].mine && (Math.abs(rr-safeR)>1 || Math.abs(cc-safeC)>1)) {
+                this.grid[rr][cc].mine = true;
+                placed++;
+            }
+        }
+        for(let r=0; r<d.rows; r++) {
+            for(let c=0; c<d.cols; c++) {
+                if(this.grid[r][c].mine) continue;
+                let count = 0;
+                for(let i=-1; i<=1; i++) {
+                    for(let j=-1; j<=1; j++) if(this.grid[r+i]?.[c+j]?.mine) count++;
+                }
+                this.grid[r][c].count = count;
+            }
+        }
+    },
+
+    useHint() {
+        if(!this.active) return;
+        Engine.play('click');
+        if(this.hints <= 0) { UI.showAdModal(); return; }
+
+        const closedSafe = this.grid.flat().filter(c => !c.mine && !c.open);
+        if(closedSafe.length > 0) {
+            const cell = closedSafe[Math.floor(Math.random() * closedSafe.length)];
+            this.hints--;
+            this.updateHUD();
+            this.revealCellUI(cell);
+            this.checkWin();
+        }
+    },
+
+    // ПОСТЕПЕННОЕ ОТКРЫТИЕ (Wave effect)
+    openCascade(r, c, delay = 0) {
+        const cell = this.grid[r][c];
+        if(cell.open || cell.flag) return;
+        
+        setTimeout(() => {
+            this.revealCellUI(cell);
+            if(cell.count === 0 && !cell.mine) {
+                for(let i=-1; i<=1; i++) {
+                    for(let j=-1; j<=1; j++) {
+                        if(this.grid[r+i]?.[c+j]) {
+                            this.openCascade(r+i, c+j, delay + 30);
+                        }
+                    }
+                }
+            }
+            this.checkWin();
+        }, delay);
+    },
+
+    revealCellUI(cell) {
+        if(cell.open) return;
+        cell.open = true;
+        cell.el.classList.add('is-revealed');
+        if(cell.mine) {
+            cell.el.classList.add('is-mine');
+            cell.el.innerHTML = '<i class="fas fa-bomb"></i>';
+        } else if(cell.count > 0) {
+            cell.el.textContent = cell.count;
+            cell.el.classList.add('n-' + cell.count);
+        }
+    },
+
+    flag(r, c) {
+        if(!this.active || this.grid[r][c].open) return;
+        Engine.play('click');
+        const cell = this.grid[r][c];
+        cell.flag = !cell.flag;
+        cell.el.classList.toggle('is-flagged');
+        this.flags += cell.flag ? 1 : -1;
+        this.updateHUD();
+    },
+
+    updateHUD() {
+        const d = DIFFICULTIES[Engine.diff];
+        document.getElementById('mine-display').textContent = "💣 " + (d.mines - this.flags);
+        const m = Math.floor(this.sec/60).toString().padStart(2, '0');
+        const s = (this.sec%60).toString().padStart(2, '0');
+        document.getElementById('time-display').textContent = `⏳ ${m}:${s}`;
+        document.getElementById('hint-count-badge').textContent = this.hints;
+    },
+
+    checkWin() {
+        const d = DIFFICULTIES[Engine.diff];
+        const closed = this.grid.flat().filter(c => !c.open).length;
+        if(this.active && closed === d.mines) this.gameOver(true);
+    },
+
+    gameOver(win) {
+        this.active = false;
+        clearInterval(this.timer);
+        this.grid.flat().forEach(c => { if(c.mine) this.revealCellUI(c); });
+        const t = CONFIG[Engine.lang];
+        UI.showStatusModal(win ? t.win : t.lose, win ? `${t.time} ${this.sec}s` : ":(");
+    }
+};
+
+/**
+ * ИНТЕРФЕЙС
+ */
+const UI = {
+    showStatusModal(title, text) {
+        const t = CONFIG[Engine.lang];
+        const content = document.getElementById('modal-content');
+        content.innerHTML = `<h2>${title}</h2><p style="margin:15px 0">${text}</p><button class="action-btn hero" style="width:100%" onclick="UI.closeModal()">${t.back}</button>`;
+        document.getElementById('global-modal').style.display = 'flex';
+    },
+
+    showAdModal() {
+        const t = CONFIG[Engine.lang];
+        const content = document.getElementById('modal-content');
+        content.innerHTML = `
+            <h2 style="color:#f1c40f">${t.adTitle}</h2>
+            <p style="margin:15px 0; font-size:0.85rem">${t.adText}</p>
+            <button class="action-btn hero" style="width:100%" onclick="UI.startAd()">${t.watch}</button>
+            <button class="action-btn" style="width:100%; margin-top:10px" onclick="UI.closeModal()">${t.cancel}</button>
+        `;
+        document.getElementById('global-modal').style.display = 'flex';
+    },
+
+    startAd() {
+        const rid = SHORTS_DB[Math.floor(Math.random() * SHORTS_DB.length)];
+        const content = document.getElementById('modal-content');
+        content.innerHTML = `
+            <h3>ALI_Good_Gaming</h3>
+            <div class="video-container">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/${rid}?autoplay=1&controls=0" frameborder="0"></iframe>
+                <div class="ad-timer" id="ad-timer">15s</div>
+            </div>
+        `;
+        let left = 15;
+        const itv = setInterval(() => {
+            left--;
+            const el = document.getElementById('ad-timer');
+            if(el) el.textContent = left + "s";
+            if(left <= 0) {
+                clearInterval(itv);
+                GameCore.hints++;
+                GameCore.updateHUD();
+                UI.showStatusModal("Done!", "+1 Hint");
+            }
+        }, 1000);
+    },
+
+    openSettings() {
+        const t = CONFIG[Engine.lang];
+        const content = document.getElementById('modal-content');
+        content.innerHTML = `
+            <h2>${t.settings}</h2>
+            <div style="margin:15px 0; text-align:left">
+                <label style="font-size:0.75rem; color:var(--primary); font-weight:800">${t.scale}</label>
+                <select class="config-select" onchange="Engine.diff=this.value">
+                    <option value="easy" ${Engine.diff==='easy'?'selected':''}>10x10</option>
+                    <option value="med" ${Engine.diff==='med'?'selected':''}>16x16</option>
+                    <option value="hard" ${Engine.diff==='hard'?'selected':''}>20x20</option>
+                </select>
+                <label style="font-size:0.75rem; color:var(--primary); font-weight:800">${t.theme}</label>
+                <select class="config-select" onchange="document.body.setAttribute('data-theme', this.value)">
+                    <option value="ocean">CYBER BLUE</option>
+                    <option value="neon">NEON PINK</option>
+                    <option value="emerald">EMERALD</option>
+                    <option value="gold">GOLDEN LUSTRE</option>
+                    <option value="blood">BLOOD MOON</option>
+                </select>
+                <label style="font-size:0.75rem; color:var(--primary); font-weight:800">${t.audio}</label>
+                <select class="config-select" onchange="Engine.audio=(this.value==='true')">
+                    <option value="true" ${Engine.audio?'selected':''}>${t.on}</option>
+                    <option value="false" ${!Engine.audio?'selected':''}>${t.off}</option>
+                </select>
+                <label style="font-size:0.75rem; color:var(--primary); font-weight:800">${t.lang}</label>
+                <select class="config-select" onchange="Engine.lang=this.value">
+                    <option value="ru" ${Engine.lang==='ru'?'selected':''}>РУССКИЙ</option>
+                    <option value="en" ${Engine.lang==='en'?'selected':''}>ENGLISH</option>
+                </select>
+            </div>
+            <button class="action-btn hero" style="width:100%" onclick="Engine.updateLang(); UI.closeModal()">${t.save}</button>
+        `;
+        document.getElementById('global-modal').style.display = 'flex';
+    },
+
+    showRecords() {
+        const t = CONFIG[Engine.lang];
+        this.showStatusModal(t.records, t.empty);
+    },
+
+    closeModal() { document.getElementById('global-modal').style.display = 'none'; }
+};
+
+/**
+ * ИНТЕРАКТИВНЫЙ ФОН
  */
 const Particles = {
     canvas: document.getElementById('particle-canvas'),
-    ctx: null,
-    dots: [],
-    mouse: { x: -100, y: -100 },
-
+    ctx: null, dots: [],
     init() {
         this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.addEventListener('resize', () => this.resize());
-        window.addEventListener('mousemove', (e) => {
-            this.mouse.x = e.clientX;
-            this.mouse.y = e.clientY;
-        });
-
-        // Создаем частицы
-        for(let i=0; i<85; i++) {
+        for(let i=0; i<80; i++) {
             this.dots.push({
                 x: Math.random() * this.canvas.width,
                 y: Math.random() * this.canvas.height,
-                vx: (Math.random() - 0.5) * 0.4,
-                vy: (Math.random() - 0.5) * 0.4,
-                r: Math.random() * 2 + 1.2 // Немного увеличили базовый радиус
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
+                size: Math.random() * 2 + 1
             });
         }
         this.animate();
     },
-
     resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
     },
-
     animate() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+        const color = getComputedStyle(document.body).getPropertyValue('--primary');
+        this.ctx.fillStyle = color;
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 0.5;
 
-        this.dots.forEach(d => {
-            // Взаимодействие с мышью
-            let dx = this.mouse.x - d.x;
-            let dy = this.mouse.y - d.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if(dist < 180) {
-                d.x += dx * 0.012;
-                d.y += dy * 0.012;
-            }
-
-            d.x += d.vx;
-            d.y += d.vy;
-
-            if(d.x < 0 || d.x > this.canvas.width) d.vx *= -1;
-            if(d.y < 0 || d.y > this.canvas.height) d.vy *= -1;
-
-            // --- РИСУЕМ ЯРКУЮ ЧАСТИЦУ С ЭФФЕКТОМ СВЕЧЕНИЯ ---
-            this.ctx.beginPath();
-            this.ctx.arc(d.x, d.y, d.r * 1.8, 0, Math.PI * 2); // Увеличили визуальный размер
-            
-            // Настройка неонового свечения
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = color;
-            this.ctx.fillStyle = color;
-            this.ctx.globalAlpha = 0.9; // Сделали частицы почти непрозрачными (яркими)
-            
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0; // Сбрасываем тень для оптимизации перед линиями
-        });
-
-        // Рисование связей (линий)
         for(let i=0; i<this.dots.length; i++) {
+            let p = this.dots[i];
+            p.x += p.vx; p.y += p.vy;
+            if(p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
+            if(p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+
+            this.ctx.globalAlpha = 0.4;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            this.ctx.fill();
+
             for(let j=i+1; j<this.dots.length; j++) {
-                let d2 = Math.sqrt((this.dots[i].x - this.dots[j].x)**2 + (this.dots[i].y - this.dots[j].y)**2);
-                if(d2 < 120) {
+                let p2 = this.dots[j];
+                let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                if(dist < 120) {
+                    this.ctx.globalAlpha = 1 - (dist / 120);
                     this.ctx.beginPath();
-                    this.ctx.moveTo(this.dots[i].x, this.dots[i].y);
-                    this.ctx.lineTo(this.dots[j].x, this.dots[j].y);
-                    this.ctx.strokeStyle = color;
-                    // Сделали линии более видимыми (0.5 вместо 0.2)
-                    this.ctx.globalAlpha = (1 - (d2/120)) * 0.5; 
-                    this.ctx.lineWidth = 0.8;
+                    this.ctx.moveTo(p.x, p.y);
+                    this.ctx.lineTo(p2.x, p2.y);
                     this.ctx.stroke();
                 }
             }
@@ -574,401 +593,9 @@ const Particles = {
         requestAnimationFrame(() => this.animate());
     }
 };
- * ========================================================================
- * 3. AUDIO ENGINE (WEB AUDIO API)
- * ========================================================================
- */
-const Sfx = {
-    ctx: new (window.AudioContext || window.webkitAudioContext)(),
-    
-    play(freq, type, dur, vol = 0.1) {
-        if(this.ctx.state === 'suspended') this.ctx.resume();
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + dur);
-    },
 
-    tap() { this.play(550, 'sine', 0.1, 0.05); },
-    pop() { this.play(900, 'sine', 0.04, 0.03); },
-    explosion() { this.play(80, 'sawtooth', 0.7, 0.2); },
-    success() { 
-        this.play(523.25, 'sine', 0.15); 
-        setTimeout(() => this.play(659.25, 'sine', 0.3), 100); 
-    }
-};
-
-/**
- * ========================================================================
- * 4. GAME CORE LOGIC (SAPPER)
- * ========================================================================
- */
-const GameCore = {
-    rows: 9, cols: 9, mines: 10,
-    matrix: [],
-    active: false,
-    firstMove: true,
-    timerId: null,
-    sec: 0,
-    flagsCount: 0,
-    hintReady: true,
-    shuffleVids: [],
-
-    reset() {
-        const d = Engine.difficulty;
-        const setup = { easy: [9,9,10], med: [12,12,25], hard: [16,16,45] }[d];
-        [this.rows, this.cols, this.mines] = setup;
-
-        this.matrix = [];
-        this.active = true;
-        this.firstMove = true;
-        this.sec = 0;
-        this.flagsCount = 0;
-        clearInterval(this.timerId);
-        
-        // Рандомизация видео при каждой новой игре (Fisher-Yates)
-        this.shuffleVids = [...SHORTS_LIBRARY];
-        for(let i = this.shuffleVids.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.shuffleVids[i], this.shuffleVids[j]] = [this.shuffleVids[j], this.shuffleVids[i]];
-        }
-
-        this.updateHUD();
-        this.buildGrid();
-    },
-
-    buildGrid() {
-        const container = document.getElementById('game-grid');
-        container.innerHTML = '';
-        container.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
-
-        for(let r=0; r<this.rows; r++) {
-            this.matrix[r] = [];
-            for(let c=0; c<this.cols; c++) {
-                const cellEl = document.createElement('div');
-                cellEl.className = 'game-cell';
-                
-                cellEl.onclick = () => this.reveal(r, c);
-                cellEl.oncontextmenu = (e) => { e.preventDefault(); this.toggleFlag(r, c); };
-                
-                container.appendChild(cellEl);
-                this.matrix[r][c] = { 
-                    isMine: false, 
-                    isRevealed: false, 
-                    isFlagged: false, 
-                    neighborMines: 0, 
-                    el: cellEl 
-                };
-            }
-        }
-    },
-
-    reveal(r, c) {
-        if(!this.active || this.matrix[r][c].isFlagged) return;
-
-        if(this.firstMove) {
-            this.firstMove = false;
-            this.generateMines(r, c);
-            this.startTimer();
-        }
-
-        this.cascadeOpen(r, c);
-    },
-
-    /**
-     * ВОЛНОВАЯ (КАСКАДНАЯ) АНИМАЦИЯ ОТКРЫТИЯ
-     * depth влияет на задержку (чем дальше от клика - тем позже открывается)
-     */
-    async cascadeOpen(r, c, depth = 0) {
-        if(r < 0 || r >= this.rows || c < 0 || c >= this.cols) return;
-        const cell = this.matrix[r][c];
-        if(cell.isRevealed || cell.isFlagged) return;
-
-        // Эффект волны через задержку
-        if(depth > 0) {
-            await new Promise(resolve => setTimeout(resolve, depth * 35));
-        }
-
-        cell.isRevealed = true;
-        cell.el.classList.add('is-revealed');
-        Sfx.pop();
-
-        if(cell.isMine) {
-            this.endGame(false);
-            return;
-        }
-
-        if(cell.neighborMines > 0) {
-            cell.el.textContent = cell.neighborMines;
-            cell.el.classList.add('n-' + Math.min(cell.neighborMines, 6));
-        } else {
-            // Рекурсивный обход соседей
-            for(let dr=-1; dr<=1; dr++) {
-                for(let dc=-1; dc<=1; dc++) {
-                    if(dr === 0 && dc === 0) continue;
-                    this.cascadeOpen(r + dr, c + dc, depth + 1);
-                }
-            }
-        }
-        this.verifyVictory();
-    },
-
-    generateMines(safeR, safeC) {
-        let placed = 0;
-        while(placed < this.mines) {
-            let rr = Math.floor(Math.random() * this.rows);
-            let cc = Math.floor(Math.random() * this.cols);
-            
-            // Гарантируем пустоту вокруг первого клика
-            const isSafeZone = Math.abs(rr - safeR) <= 1 && Math.abs(cc - safeC) <= 1;
-            
-            if(!this.matrix[rr][cc].isMine && !isSafeZone) {
-                this.matrix[rr][cc].isMine = true;
-                placed++;
-            }
-        }
-
-        // Расчет цифр
-        for(let r=0; r<this.rows; r++) {
-            for(let c=0; c<this.cols; c++) {
-                if(this.matrix[r][c].isMine) continue;
-                let count = 0;
-                for(let i=-1; i<=1; i++) {
-                    for(let j=-1; j<=1; j++) {
-                        if(this.matrix[r+i] && this.matrix[r+i][c+j] && this.matrix[r+i][c+j].isMine) count++;
-                    }
-                }
-                this.matrix[r][c].neighborMines = count;
-            }
-        }
-    },
-
-    toggleFlag(r, c) {
-        if(!this.active || this.matrix[r][c].isRevealed) return;
-        const cell = this.matrix[r][c];
-        
-        cell.isFlagged = !cell.isFlagged;
-        cell.el.classList.toggle('is-flagged');
-        this.flagsCount += cell.isFlagged ? 1 : -1;
-        
-        Sfx.tap();
-        this.updateHUD();
-    },
-
-    updateHUD() {
-        // Отрицательные значения флагов
-        const diff = this.mines - this.flagsCount;
-        const displayVal = diff < 0 
-            ? "-" + Math.abs(diff).toString().padStart(2, '0') 
-            : diff.toString().padStart(3, '0');
-        
-        document.getElementById('mine-display').textContent = "💣 " + displayVal;
-    },
-
-    startTimer() {
-        this.timerId = setInterval(() => {
-            this.sec++;
-            const m = Math.floor(this.sec / 60).toString().padStart(2, '0');
-            const s = (this.sec % 60).toString().padStart(2, '0');
-            document.getElementById('time-display').textContent = `⏳ ${m}:${s}`;
-        }, 1000);
-    },
-
-    verifyVictory() {
-        const closedCount = this.matrix.flat().filter(c => !c.isRevealed).length;
-        if(closedCount === this.mines) this.endGame(true);
-    },
-
-    endGame(win) {
-        this.active = false;
-        clearInterval(this.timerId);
-        
-        // Вскрываем все мины
-        this.matrix.flat().forEach(c => {
-            if(c.isMine) {
-                c.el.classList.add('is-mine');
-                c.el.innerHTML = '<i class="fas fa-bomb"></i>';
-            }
-        });
-
-        if(win) {
-            Sfx.success();
-            UI.showModal(CONFIG[Engine.lang].win, `Time: ${this.sec}s`);
-        } else {
-            Sfx.explosion();
-            UI.showModal(CONFIG[Engine.lang].lose, "Better luck next time!");
-        }
-    },
-
-    /**
-     * МОДУЛЬ ПОДСКАЗОК И ЗАЩИТЫ ВИДЕО
-     */
-    requestHint() {
-        if(!this.active) return;
-
-        if(this.hintReady) {
-            this.giveHint();
-            this.hintReady = false;
-        } else {
-            VideoGuard.start();
-        }
-    },
-
-    giveHint() {
-        const safeCells = this.matrix.flat().filter(c => !c.isMine && !c.isRevealed);
-        if(safeCells.length) {
-            const target = safeCells[Math.floor(Math.random() * safeCells.length)];
-            // Подсветка клетки
-            target.el.style.boxShadow = "0 0 25px #fff, inset 0 0 15px var(--primary)";
-            target.el.style.borderColor = "#fff";
-            setTimeout(() => {
-                target.el.style.boxShadow = "";
-                target.el.style.borderColor = "";
-            }, 2500);
-        }
-    }
-};
-
-/**
- * ========================================================================
- * 5. VIDEO GUARD MODULE (YT SHORTS TRACKER)
- * ========================================================================
- */
-const VideoGuard = {
-    interval: null,
-    isUnlocked: false,
-
-    start() {
-        const vidList = GameCore.shuffleVids;
-        const randomID = vidList[Math.floor(Math.random() * vidList.length)];
-        
-        const frame = document.getElementById('yt-frame');
-        frame.src = `https://www.youtube.com/embed/${randomID}?autoplay=1&controls=0&modestbranding=1&rel=0`;
-        
-        document.getElementById('shorts-player-view').classList.add('visible');
-        
-        let countdown = 15;
-        const badge = document.getElementById('video-countdown');
-        badge.textContent = countdown + "s";
-        badge.style.background = "var(--primary)";
-
-        this.interval = setInterval(() => {
-            countdown--;
-            badge.textContent = countdown + "s";
-            
-            if(countdown <= 0) {
-                clearInterval(this.interval);
-                badge.textContent = "HINT READY";
-                badge.style.background = "#00ff88";
-                this.isUnlocked = true;
-            }
-        }, 1000);
-    },
-
-    close() {
-        clearInterval(this.interval);
-        document.getElementById('shorts-player-view').classList.remove('visible');
-        document.getElementById('yt-frame').src = "";
-        
-        if(this.isUnlocked) {
-            GameCore.giveHint();
-            this.isUnlocked = false;
-        }
-    }
-};
-
-/**
- * ========================================================================
- * 6. UI & APPLICATION ENGINE
- * ========================================================================
- */
-const Engine = {
-    lang: 'RU',
-    difficulty: 'easy',
-    theme: 'neon',
-
-    init() {
-        Particles.init();
-        this.applyStrings();
-    },
-
-    launchGame() {
-        this.switchScreen('game');
-        GameCore.reset();
-    },
-
-    exitToMenu() {
-        this.switchScreen('menu');
-        clearInterval(GameCore.timerId);
-    },
-
-    switchScreen(id) {
-        Sfx.tap();
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id + '-screen').classList.add('active');
-    },
-
-    applyStrings() {
-        const dict = CONFIG[this.lang];
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            el.textContent = dict[el.dataset.i18n];
-        });
-    }
-};
-
-const UI = {
-    showModal(title, html) {
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-html-content').innerHTML = html;
-        document.getElementById('global-modal').classList.add('visible');
-    },
-
-    closeModal() {
-        document.getElementById('global-modal').classList.remove('visible');
-    },
-
-    openSettings() {
-        this.showModal(CONFIG[Engine.lang].settings, `
-            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
-                <label style="font-size: 0.7rem; color: var(--primary);">LANGUAGE</label>
-                <select onchange="Engine.lang=this.value; Engine.applyStrings(); UI.closeModal(); UI.openSettings();" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
-                    <option value="RU" ${Engine.lang==='RU'?'selected':''}>РУССКИЙ</option>
-                    <option value="EN" ${Engine.lang==='EN'?'selected':''}>ENGLISH</option>
-                </select>
-
-                <label style="font-size: 0.7rem; color: var(--primary); margin-top: 10px;">DIFFICULTY</label>
-                <select onchange="Engine.difficulty=this.value" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
-                    <option value="easy">${CONFIG[Engine.lang].easy}</option>
-                    <option value="med">${CONFIG[Engine.lang].med}</option>
-                    <option value="hard">${CONFIG[Engine.lang].hard}</option>
-                </select>
-
-                <label style="font-size: 0.7rem; color: var(--primary); margin-top: 10px;">COLOR THEME</label>
-                <select onchange="document.body.setAttribute('data-theme', this.value)" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
-                    <option value="neon">CYBER NEON</option>
-                    <option value="ocean">DEEP OCEAN</option>
-                    <option value="emerald">EMERALD</option>
-                    <option value="gold">GOLDEN LUSTRE</option>
-                    <option value="blood">BLOOD MOON</option>
-                </select>
-            </div>
-        `);
-    },
-
-    openRecords() {
-        this.showModal(CONFIG[Engine.lang].records, "<p style='font-family: var(--font-mono);'>No local records found yet.</p>");
-    }
-};
-
-// Запуск приложения
 window.onload = () => Engine.init();
-
 </script>
 </body>
 </html>
+
