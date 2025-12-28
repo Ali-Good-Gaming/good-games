@@ -19,7 +19,7 @@
             /* Базовая тема: Cyber Neon (Твоя любимая по умолчанию) */
             --primary: #e94560;
             --primary-glow: rgba(233, 69, 96, 0.6);
-           --bg-body: #1a1a2e;
+           --bg-body: #0b0c15;
             --bg-glass: rgba(15, 52, 96, 0.1);
             --bg-modal: rgba(10, 11, 30, 0.98);
             --text-main: #ffffff;
@@ -157,7 +157,15 @@
         }
 
         .btn {
-            background: var(--bg-glass);
+            #board-container {
+    background: #020205; /* Почти черный, сплошной цвет */
+    padding: 15px;       /* Чуть увеличим отступ для красоты */
+    border-radius: 25px;
+    border: 1px solid var(--cell-border);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8); /* Тень посильнее */
+    position: relative;
+    z-index: 20; /* Поднимаем поле НАД частицами */
+}
             border: 1px solid var(--cell-border);
             color: #fff;
             padding: 22px 35px;
