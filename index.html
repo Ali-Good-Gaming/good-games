@@ -15,7 +15,7 @@
         */
         :root {
             /* Базовый фон: Глубокий матовый сине-черный (для идеальной читаемости) */
-            --bg-body: #0a0b10;
+            --bg-body: #161821;
             
             /* Цвета игрового пространства (Непрозрачные) */
             --bg-card: #12141d;
@@ -476,8 +476,9 @@ const SHORTS_LIBRARY = [
 ];
 
 /**
+/**
  * ========================================================================
- * 2. BACKGROUND ENGINE (PARTICLES)
+ * 2. BACKGROUND ENGINE (PARTICLES) - UPGRADED NEON VERSION
  * ========================================================================
  */
 const Particles = {
@@ -495,13 +496,14 @@ const Particles = {
             this.mouse.y = e.clientY;
         });
 
+        // Создаем частицы
         for(let i=0; i<85; i++) {
             this.dots.push({
                 x: Math.random() * this.canvas.width,
                 y: Math.random() * this.canvas.height,
                 vx: (Math.random() - 0.5) * 0.4,
                 vy: (Math.random() - 0.5) * 0.4,
-                r: Math.random() * 2 + 0.5
+                r: Math.random() * 2 + 1.2 // Немного увеличили базовый радиус
             });
         }
         this.animate();
@@ -514,10 +516,10 @@ const Particles = {
 
     animate() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        const color = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+        const color = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
 
         this.dots.forEach(d => {
-            // Взаимодействие с мышью (Притяжение)
+            // Взаимодействие с мышью
             let dx = this.mouse.x - d.x;
             let dy = this.mouse.y - d.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -530,28 +532,35 @@ const Particles = {
             d.x += d.vx;
             d.y += d.vy;
 
-            // Отскоки от стен
             if(d.x < 0 || d.x > this.canvas.width) d.vx *= -1;
             if(d.y < 0 || d.y > this.canvas.height) d.vy *= -1;
 
+            // --- РИСУЕМ ЯРКУЮ ЧАСТИЦУ С ЭФФЕКТОМ СВЕЧЕНИЯ ---
             this.ctx.beginPath();
-            this.ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+            this.ctx.arc(d.x, d.y, d.r * 1.8, 0, Math.PI * 2); // Увеличили визуальный размер
+            
+            // Настройка неонового свечения
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = color;
             this.ctx.fillStyle = color;
-            this.ctx.globalAlpha = 0.25;
+            this.ctx.globalAlpha = 0.9; // Сделали частицы почти непрозрачными (яркими)
+            
             this.ctx.fill();
+            this.ctx.shadowBlur = 0; // Сбрасываем тень для оптимизации перед линиями
         });
 
-        // Рисование связей
+        // Рисование связей (линий)
         for(let i=0; i<this.dots.length; i++) {
             for(let j=i+1; j<this.dots.length; j++) {
                 let d2 = Math.sqrt((this.dots[i].x - this.dots[j].x)**2 + (this.dots[i].y - this.dots[j].y)**2);
-                if(d2 < 110) {
+                if(d2 < 120) {
                     this.ctx.beginPath();
                     this.ctx.moveTo(this.dots[i].x, this.dots[i].y);
                     this.ctx.lineTo(this.dots[j].x, this.dots[j].y);
                     this.ctx.strokeStyle = color;
-                    this.ctx.globalAlpha = (1 - (d2/110)) * 0.2;
-                    this.ctx.lineWidth = 0.6;
+                    // Сделали линии более видимыми (0.5 вместо 0.2)
+                    this.ctx.globalAlpha = (1 - (d2/120)) * 0.5; 
+                    this.ctx.lineWidth = 0.8;
                     this.ctx.stroke();
                 }
             }
@@ -559,8 +568,6 @@ const Particles = {
         requestAnimationFrame(() => this.animate());
     }
 };
-
-/**
  * ========================================================================
  * 3. AUDIO ENGINE (WEB AUDIO API)
  * ========================================================================
