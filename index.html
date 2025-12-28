@@ -6,52 +6,53 @@
     <title>Sapper Ultimate Elite | ALI_GOOD_GAMING</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Montserrat:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Montserrat:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         /* ================================================================
-           1. ЦВЕТОВЫЕ СХЕМЫ И ПЕРЕМЕННЫЕ (THEMES ENGINE)
+           1. АРХИТЕКТУРА ЦВЕТОВ И ТЕМ (CSS VARIABLES)
            ================================================================
         */
         :root {
-            /* Базовая тема: Cyber Neon (Твоя любимая по умолчанию) */
+            /* Базовый фон: Глубокий матовый сине-черный (для идеальной читаемости) */
+            --bg-body: #0a0b10;
+            
+            /* Цвета игрового пространства (Непрозрачные) */
+            --bg-card: #12141d;
+            --bg-board: #050608;
+            
+            /* Акцентный цвет: Cyber Red / Pink */
             --primary: #e94560;
-            --primary-glow: rgba(233, 69, 96, 0.6);
-           --bg-body: #121212;
-            --bg-glass: rgba(15, 52, 96, 0.1);
-            --bg-modal: rgba(10, 11, 30, 0.98);
+            --primary-glow: rgba(233, 69, 96, 0.5);
+            --primary-dark: #951c30;
+
+            /* Текст */
             --text-main: #ffffff;
-            --text-dim: rgba(255, 255, 255, 0.5);
-            --cell-bg: rgba(255, 255, 255, 0.07);
-            --cell-border: rgba(255, 255, 255, 0.1);
+            --text-dim: #71758e;
+            
+            /* Ячейки */
+            --cell-idle: #1c1f2b;
+            --cell-border: #2d3142;
+            --cell-hover: #363b53;
+
+            /* Шрифты */
             --font-display: 'Orbitron', sans-serif;
             --font-main: 'Montserrat', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            --trans: 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+            
+            /* Тайминги */
+            --trans-fast: 0.15s ease;
+            --trans-norm: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Дополнительные темы с выверенным контрастом */
-        [data-theme="ocean"] {
-            --primary: #00d2ff; --primary-glow: rgba(0, 210, 255, 0.6);
-            --bg-body: #010a12; --bg-glass: rgba(0, 210, 255, 0.05);
-        }
-        [data-theme="emerald"] {
-            --primary: #00ff88; --primary-glow: rgba(0, 255, 136, 0.6);
-            --bg-body: #020f08; --bg-glass: rgba(0, 255, 136, 0.05);
-        }
-        [data-theme="gold"] {
-            --primary: #f1c40f; --primary-glow: rgba(241, 196, 15, 0.6);
-            --bg-body: #0c0b02; --bg-glass: rgba(241, 196, 15, 0.05);
-        }
-        [data-theme="blood"] {
-            --primary: #ff0040; --primary-glow: rgba(255, 0, 64, 0.6);
-            --bg-body: #0a0104; --bg-glass: rgba(255, 0, 64, 0.05);
-        }
+        /* Системы динамических тем */
+        [data-theme="ocean"] { --primary: #00d2ff; --primary-glow: rgba(0, 210, 255, 0.5); --primary-dark: #0086a3; }
+        [data-theme="emerald"] { --primary: #00ff88; --primary-glow: rgba(0, 255, 136, 0.5); --primary-dark: #009e54; }
+        [data-theme="gold"] { --primary: #f1c40f; --primary-glow: rgba(241, 196, 15, 0.5); --primary-dark: #a38500; }
+        [data-theme="blood"] { --primary: #ff0040; --primary-glow: rgba(255, 0, 64, 0.5); --primary-dark: #9e0027; }
 
         /* ================================================================
-           2. БАЗОВЫЕ СТИЛИ И СЕТКА
+           2. ГЛОБАЛЬНЫЕ СТИЛИ (RESET & BODY)
            ================================================================
         */
         * {
@@ -59,21 +60,11 @@
             margin: 0; padding: 0;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
 
         body {
-           body {
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    font-family: var(--font-main);
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background 1s ease;
-}
+            background-color: var(--bg-body);
             color: var(--text-main);
             font-family: var(--font-main);
             height: 100vh;
@@ -82,29 +73,32 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background 1s ease;
+            position: relative;
         }
 
-        canvas#particle-canvas {
+        /* Интерактивный фон (Canvas) */
+        #particle-canvas {
             position: fixed;
             top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1;
-            pointer-events: none; /* Пропускает клики к игре */
+            pointer-events: none;
         }
 
-        #ui-wrapper {
+        /* Главный контейнер приложения */
+        #app-root {
             position: relative;
             z-index: 10;
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            perspective: 1000px;
         }
 
         /* ================================================================
-           3. ГЛАВНОЕ МЕНЮ (КЛАССИЧЕСКИЙ ДИЗАЙН)
+           3. КОМПОНЕНТЫ ИНТЕРФЕЙСА (UI)
            ================================================================
         */
         .screen {
@@ -112,282 +106,264 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 600px;
-            animation: fadeIn 0.8s ease-out;
+            max-width: 650px;
+            animation: screenEntry 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         .screen.active { display: flex; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes screenEntry {
+            from { opacity: 0; transform: scale(0.95) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Логотип и брендинг */
+        .logo-group {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
         .main-logo {
             font-family: var(--font-display);
-            font-size: clamp(3.5rem, 15vw, 6.5rem);
+            font-size: clamp(3rem, 12vw, 6rem);
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: -2px;
-            background: linear-gradient(to bottom, #fff 40%, var(--primary) 100%);
+            background: linear-gradient(to bottom, #fff 30%, var(--primary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 25px var(--primary-glow));
-            line-height: 0.9;
+            filter: drop-shadow(0 0 20px var(--primary-glow));
+            line-height: 0.85;
         }
 
-        .brand-label {
+        .brand-sub {
             font-family: var(--font-mono);
-            font-size: 0.85rem;
-            letter-spacing: 12px;
+            font-size: 0.8rem;
+            letter-spacing: 10px;
             color: var(--primary);
             text-transform: uppercase;
+            margin-top: 15px;
             font-weight: 700;
-            margin-bottom: 50px;
-            opacity: 0.8;
-            margin-left: 12px;
+            opacity: 0.9;
         }
 
-        .btn-container {
+        /* Кнопки управления */
+        .menu-grid {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            width: 100%;
-            padding: 0 40px;
+            gap: 16px;
+            width: 85%;
         }
 
-        .btn {
-            #board-container {
-    background: #020205; /* Почти черный, сплошной цвет */
-    padding: 15px;       /* Чуть увеличим отступ для красоты */
-    border-radius: 25px;
-    border: 1px solid var(--cell-border);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8); /* Тень посильнее */
-    position: relative;
-    z-index: 20; /* Поднимаем поле НАД частицами */
-}
+        .action-btn {
+            background: var(--bg-card);
             border: 1px solid var(--cell-border);
             color: #fff;
-            padding: 22px 35px;
+            padding: 20px 30px;
             font-family: var(--font-display);
-            font-size: 1.1rem;
-            border-radius: 20px;
+            font-size: 1rem;
+            border-radius: 16px;
             cursor: pointer;
-            transition: var(--trans);
+            transition: var(--trans-norm);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 15px;
-            backdrop-filter: blur(10px);
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             position: relative;
             overflow: hidden;
         }
 
-        .btn::before {
+        .action-btn::after {
             content: '';
             position: absolute;
             top: 0; left: -100%;
             width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
             transition: 0.5s;
         }
 
-        .btn:hover {
+        .action-btn:hover {
             border-color: var(--primary);
-            background: rgba(var(--primary-glow), 0.15);
-            transform: scale(1.05) translateX(5px);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5), inset 0 0 15px var(--primary-glow);
+            background: #1a1d29;
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
         }
 
-        .btn:hover::before { left: 100%; }
+        .action-btn:hover::after { left: 100%; }
 
-        .btn.primary {
+        .action-btn.hero {
             background: var(--primary);
             border: none;
-            box-shadow: 0 10px 30px var(--primary-glow);
+            font-weight: 900;
+            box-shadow: 0 0 30px var(--primary-glow);
         }
 
-        .social-row {
+        .social-bar {
             display: flex;
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
-        .icon-btn {
-            width: 55px; height: 55px;
-            border-radius: 15px;
-            background: var(--bg-glass);
+        .social-link {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            background: var(--bg-card);
             border: 1px solid var(--cell-border);
             display: flex;
             justify-content: center; align-items: center;
-            color: #fff; font-size: 1.4rem;
-            transition: var(--trans);
+            color: #fff; font-size: 1.2rem;
+            text-decoration: none;
+            transition: var(--trans-norm);
         }
 
-        .icon-btn:hover {
+        .social-link:hover {
             background: var(--primary);
-            transform: translateY(-5px) rotate(10deg);
-            box-shadow: var(--primary-glow);
+            color: #fff;
+            transform: rotate(-10deg) translateY(-5px);
+            box-shadow: 0 5px 15px var(--primary-glow);
         }
 
         /* ================================================================
-           4. ИГРОВОЙ ИНТЕРФЕЙС (HUD & BOARD)
+           4. ИГРОВОЙ МОДУЛЬ (GAMEPLAY)
            ================================================================
         */
-        .game-header {
+        .game-top-bar {
             width: 95%;
             max-width: 500px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--bg-card);
+            padding: 15px 25px;
+            border-radius: 20px;
+            border: 1px solid var(--cell-border);
             margin-bottom: 20px;
-            background: var(--bg-glass);
-            padding: 20px 30px;
-            border-radius: 30px;
-            border: 1px solid var(--cell-border);
-            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .hud-box { text-align: center; }
-        .hud-label {
-            font-size: 0.6rem;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .hud-value {
-            font-family: var(--font-mono);
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .stat-block { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 1px; }
+        .stat-value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
 
-        #board-container {
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 25px;
-            border: 1px solid var(--cell-border);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-        }
-
-        #minefield {
-            display: grid;
-            gap: 6px;
-        }
-
-        .cell {
-            width: 42px; height: 42px;
-            background: var(--cell-bg);
-            border: 1px solid var(--cell-border);
-            border-radius: 10px;
-            display: flex;
-            justify-content: center; align-items: center;
-            font-weight: 900; font-size: 1.3rem;
-            transition: all 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
-            cursor: pointer;
+        #board-frame {
+            background: var(--bg-board);
+            padding: 12px;
+            border-radius: 18px;
+            border: 2px solid var(--cell-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             position: relative;
         }
 
-        .cell:hover:not(.revealed) {
-            background: rgba(255,255,255,0.15);
-            transform: scale(1.08);
-            z-index: 2;
-            border-color: var(--primary);
+        #game-grid {
+            display: grid;
+            gap: 4px;
         }
 
-        .cell.revealed {
-            background: rgba(0,0,0,0.2);
-            border-color: transparent;
+        .game-cell {
+            width: 42px; height: 42px;
+            background: var(--cell-idle);
+            border: 1px solid var(--cell-border);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center; align-items: center;
+            font-weight: 900; font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .game-cell:hover:not(.is-revealed) {
+            background: var(--cell-hover);
+            transform: scale(1.08);
+            border-color: var(--primary);
+            z-index: 5;
+            box-shadow: 0 0 15px rgba(var(--primary-glow), 0.3);
+        }
+
+        .game-cell.is-revealed {
+            background: rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.03);
             cursor: default;
         }
 
-        .cell.mine {
+        .game-cell.is-mine {
             background: var(--primary) !important;
-            color: white;
-            box-shadow: 0 0 25px var(--primary);
-            animation: mineBoom 0.5s ease-out;
+            color: #fff;
+            box-shadow: 0 0 20px var(--primary);
+            animation: boomShake 0.4s ease-in-out;
         }
 
-        @keyframes mineBoom {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
+        @keyframes boomShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
         }
 
-        .cell.flagged::after {
+        .game-cell.is-flagged::after {
             content: '🚩';
             font-size: 1.1rem;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
         }
 
         /* Цвета цифр */
-        .val-1 { color: #3498db; } .val-2 { color: #2ecc71; } 
-        .val-3 { color: #e74c3c; } .val-4 { color: #9b59b6; }
-        .val-5 { color: #f1c40f; }
+        .n-1 { color: #3498db; } .n-2 { color: #2ecc71; } .n-3 { color: #e74c3c; }
+        .n-4 { color: #9b59b6; } .n-5 { color: #f1c40f; } .n-6 { color: #1abc9c; }
 
         /* ================================================================
-           5. МОДАЛЬНЫЕ ОКНА И ЗАЩИТА SHORTS
+           5. МОДАЛЬНЫЕ ОКНА И ВИДЕО (MODALS)
            ================================================================
         */
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(20px);
+        .modal-wrap {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(10px);
             z-index: 1000;
-            display: none;
-            justify-content: center; align-items: center;
-            opacity: 0; transition: 0.5s;
+            display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.4s;
         }
+        .modal-wrap.visible { display: flex; opacity: 1; }
 
-        .overlay.visible { display: flex; opacity: 1; }
-
-        .modal {
-            background: var(--bg-modal);
+        .modal-body {
+            background: var(--bg-card);
             border: 1px solid var(--primary);
-            width: 90%; max-width: 450px;
-            padding: 40px; border-radius: 35px;
+            width: 90%; max-width: 420px;
+            padding: 35px; border-radius: 24px;
             text-align: center;
-            box-shadow: 0 0 50px rgba(var(--primary-glow), 0.2);
+            box-shadow: 0 0 60px rgba(0,0,0,1), 0 0 20px var(--primary-glow);
         }
 
-        #shorts-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+        #shorts-player-view {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 2000;
-            display: none;
-            flex-direction: column;
+            display: none; flex-direction: column;
         }
+        #shorts-player-view.visible { display: flex; }
 
-        #shorts-container.visible { display: flex; }
-
-        .shorts-header {
-            padding: 20px; display: flex; justify-content: space-between;
-            align-items: center; background: rgba(255,255,255,0.05);
+        .player-controls {
+            padding: 15px 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #0a0a0a; border-bottom: 1px solid #222;
         }
 
         .timer-badge {
             background: var(--primary);
-            padding: 8px 15px; border-radius: 10px;
-            font-family: var(--font-mono); font-weight: bold;
+            color: #fff; padding: 6px 14px; border-radius: 8px;
+            font-family: var(--font-mono); font-weight: 700;
         }
 
-        iframe#yt-player { width: 100%; flex-grow: 1; border: none; }
+        iframe#yt-frame { width: 100%; flex-grow: 1; border: none; }
 
         /* ================================================================
            6. АДАПТИВНОСТЬ
            ================================================================
         */
-        @media (max-width: 500px) {
-            .cell { width: 34px; height: 34px; font-size: 1rem; }
-            .main-logo { font-size: 4rem; }
-            .brand-label { font-size: 0.6rem; letter-spacing: 8px; }
-            .btn { padding: 18px 25px; font-size: 0.9rem; }
+        @media (max-width: 480px) {
+            .game-cell { width: 35px; height: 35px; font-size: 1rem; }
+            .main-logo { font-size: 3.8rem; }
+            .brand-sub { font-size: 0.65rem; letter-spacing: 6px; }
+            .action-btn { padding: 16px 20px; font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -395,116 +371,120 @@
 
     <canvas id="particle-canvas"></canvas>
 
-    <div id="ui-wrapper">
+    <div id="app-root">
         
-        <main id="menu-screen" class="screen active">
-            <h1 class="main-logo">Sapper</h1>
-            <div class="brand-label">ALI_GOOD_GAMING</div>
-
-            <div class="social-row">
-                <a href="https://youtube.com/@ali-gg" target="_blank" class="icon-btn"><i class="fab fa-youtube"></i></a>
-                <a href="https://t.me/aligoodgaming" target="_blank" class="icon-btn"><i class="fab fa-telegram"></i></a>
-                <a href="https://tiktok.com/@ali_goodgaming" target="_blank" class="icon-btn"><i class="fab fa-tiktok"></i></a>
+        <section id="menu-screen" class="screen active">
+            <div class="logo-group">
+                <h1 class="main-logo">Sapper</h1>
+                <div class="brand-sub">ALI_GOOD_GAMING</div>
             </div>
 
-            <div class="btn-container">
-                <button class="btn primary" onclick="App.startGame()">
-                    <i class="fas fa-play"></i> <span data-i18n="play">Играть</span>
-                </button>
-                <button class="btn" onclick="App.openSettings()">
-                    <i class="fas fa-cog"></i> <span data-i18n="settings">Настройки</span>
-                </button>
-                <button class="btn" onclick="App.openRecords()">
-                    <i class="fas fa-trophy"></i> <span data-i18n="records">Рекорды</span>
-                </button>
+            <div class="social-bar">
+                <a href="https://youtube.com/@ali-gg" target="_blank" class="social-link"><i class="fab fa-youtube"></i></a>
+                <a href="https://t.me/aligoodgaming" target="_blank" class="social-link"><i class="fab fa-telegram"></i></a>
+                <a href="https://tiktok.com/@ali_goodgaming" target="_blank" class="social-link"><i class="fab fa-tiktok"></i></a>
             </div>
-        </main>
 
-        <main id="game-screen" class="screen">
-            <div class="game-header">
-                <div class="hud-box">
-                    <div class="hud-label" data-i18n="mines">Мины</div>
-                    <div id="mine-count" class="hud-value">💣 010</div>
+            <nav class="menu-grid">
+                <button class="action-btn hero" onclick="Engine.launchGame()">
+                    <i class="fas fa-play-circle"></i> <span data-i18n="play">Играть</span>
+                </button>
+                <button class="action-btn" onclick="UI.openSettings()">
+                    <i class="fas fa-sliders-h"></i> <span data-i18n="settings">Настройки</span>
+                </button>
+                <button class="action-btn" onclick="UI.openRecords()">
+                    <i class="fas fa-award"></i> <span data-i18n="records">Рекорды</span>
+                </button>
+            </nav>
+        </section>
+
+        <section id="game-screen" class="screen">
+            <header class="game-top-bar">
+                <div class="stat-block">
+                    <div class="stat-label" data-i18n="mines">Мины</div>
+                    <div id="mine-display" class="stat-value">💣 010</div>
                 </div>
 
-                <div style="width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; cursor: pointer;" onclick="Game.init()">
-                    <i class="fas fa-sync-alt" style="font-size: 1.5rem; color: var(--primary);"></i>
+                <div id="restart-trigger" class="action-btn" style="width: 55px; height: 55px; border-radius: 50%; padding: 0;" onclick="GameCore.reset()">
+                    <i class="fas fa-sync-alt" style="color: var(--primary);"></i>
                 </div>
 
-                <div class="hud-box">
-                    <div class="hud-label" data-i18n="time">Время</div>
-                    <div id="game-timer" class="hud-value">⏳ 00:00</div>
+                <div class="stat-block">
+                    <div class="stat-label" data-i18n="time">Время</div>
+                    <div id="time-display" class="stat-value">⏳ 00:00</div>
                 </div>
+            </header>
+
+            <div id="board-frame">
+                <div id="game-grid"></div>
             </div>
 
-            <div id="board-container">
-                <div id="minefield"></div>
-            </div>
-
-            <div style="margin-top: 30px; display: flex; gap: 15px; width: 100%; padding: 0 20px;">
-                <button class="btn" style="flex: 1; padding: 15px;" onclick="Game.getHint()">
+            <footer style="margin-top: 30px; display: flex; gap: 15px; width: 90%; max-width: 500px;">
+                <button class="action-btn" style="flex: 1;" onclick="GameCore.requestHint()">
                     <i class="fas fa-lightbulb"></i> <span data-i18n="hint">Хинт</span>
                 </button>
-                <button class="btn" style="flex: 1; padding: 15px;" onclick="App.showScreen('menu')">
-                    <i class="fas fa-home"></i> <span data-i18n="menu">Меню</span>
+                <button class="action-btn" style="flex: 1;" onclick="Engine.exitToMenu()">
+                    <i class="fas fa-door-open"></i> <span data-i18n="menu">Выход</span>
                 </button>
-            </div>
-        </main>
+            </footer>
+        </section>
+
     </div>
 
-    <div id="modal-overlay" class="overlay">
-        <div class="modal">
-            <h2 id="modal-title" style="font-family: var(--font-display); color: var(--primary); margin-bottom: 20px; font-size: 2rem;">INFO</h2>
-            <p id="modal-desc" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 30px;"></p>
-            <button class="btn primary" style="width: 100%;" onclick="App.closeModal()">OK</button>
+    <div id="global-modal" class="modal-wrap">
+        <div class="modal-body">
+            <h2 id="modal-title" style="font-family: var(--font-display); color: var(--primary); margin-bottom: 20px; font-size: 1.8rem;">MESSAGE</h2>
+            <div id="modal-html-content" style="color: var(--text-dim); line-height: 1.6; margin-bottom: 25px;"></div>
+            <button class="action-btn hero" style="width: 100%;" onclick="UI.closeModal()">OK</button>
         </div>
     </div>
 
-    <div id="shorts-container">
-        <div class="shorts-header">
-            <div style="font-family: var(--font-display); font-size: 0.8rem;">ALI_GG PREMIUM CONTENT</div>
-            <div id="shorts-timer" class="timer-badge">15s</div>
-            <div onclick="Game.cancelShorts()" style="cursor: pointer; font-size: 1.5rem;"><i class="fas fa-times"></i></div>
+    <div id="shorts-player-view">
+        <div class="player-controls">
+            <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--primary);">EXCLUSIVE HINT CONTENT</div>
+            <div id="video-countdown" class="timer-badge">15s</div>
+            <div onclick="VideoGuard.close()" style="cursor: pointer; font-size: 1.6rem; color: #fff;"><i class="fas fa-times-circle"></i></div>
         </div>
-        <iframe id="yt-player" src=""></iframe>
+        <iframe id="yt-frame" src=""></iframe>
     </div>
 
 <script>
 /**
  * ========================================================================
- * 1. КОНСТАНТЫ И ЛОКАЛИЗАЦИЯ
+ * 1. CONFIGURATION & LOCALIZATION
  * ========================================================================
  */
-const I18N = {
-    ru: {
+const CONFIG = {
+    RU: {
         play: "Играть", settings: "Настройки", records: "Рекорды",
         mines: "Мины", time: "Время", hint: "Помощь", menu: "Меню",
         win: "ПОБЕДА! 🎉", lose: "БУМ! 💀", easy: "Легко", med: "Средне", hard: "Эксперт",
-        wait: "Смотри еще: ", get_hint: "Подсказка получена!"
+        unlocked: "Хинт разблокирован!", watching: "Смотри: "
     },
-    en: {
+    EN: {
         play: "Play", settings: "Settings", records: "Records",
         mines: "Mines", time: "Time", hint: "Hint", menu: "Menu",
         win: "VICTORY! 🎉", lose: "BOOM! 💀", easy: "Easy", med: "Medium", hard: "Expert",
-        wait: "Wait: ", get_hint: "Hint Unlocked!"
+        unlocked: "Hint Unlocked!", watching: "Watch: "
     }
 };
 
-const VIDEO_IDS = [
+const SHORTS_LIBRARY = [
     "z0yLX-BKyQo", "YDCA39Ns8vo", "qxuAyYfXtRA", "Np20JpunLJY", "zwhkYTpjt3A",
-    "t0Q2otsqC4I", "Sqj1d8I4qH4", "v33-kGj7A7M", "5hS9M2lRToA", "XJ7p9F4M_7Y"
+    "t0Q2otsqC4I", "Sqj1d8I4qH4", "v33-kGj7A7M", "5hS9M2lRToA", "XJ7p9F4M_7Y",
+    "eG_FqK8-0W8", "X_y59fA8W_M"
 ];
 
 /**
  * ========================================================================
- * 2. ДВИЖОК ЧАСТИЦ (ИНТЕРАКТИВНЫЙ ФОН)
+ * 2. BACKGROUND ENGINE (PARTICLES)
  * ========================================================================
  */
 const Particles = {
     canvas: document.getElementById('particle-canvas'),
     ctx: null,
-    items: [],
-    mouse: { x: -1000, y: -1000 },
+    dots: [],
+    mouse: { x: -100, y: -100 },
 
     init() {
         this.ctx = this.canvas.getContext('2d');
@@ -514,17 +494,17 @@ const Particles = {
             this.mouse.x = e.clientX;
             this.mouse.y = e.clientY;
         });
-        
-        for(let i=0; i<80; i++) {
-            this.items.push({
+
+        for(let i=0; i<85; i++) {
+            this.dots.push({
                 x: Math.random() * this.canvas.width,
                 y: Math.random() * this.canvas.height,
-                vx: (Math.random() - 0.5) * 0.5,
-                vy: (Math.random() - 0.5) * 0.5,
-                r: Math.random() * 2 + 1
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                r: Math.random() * 2 + 0.5
             });
         }
-        this.draw();
+        this.animate();
     },
 
     resize() {
@@ -532,62 +512,64 @@ const Particles = {
         this.canvas.height = window.innerHeight;
     },
 
-    draw() {
+    animate() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         const color = getComputedStyle(document.documentElement).getPropertyValue('--primary');
 
-        this.items.forEach(p => {
-            // Эффект притяжения к мыши
-            let dx = this.mouse.x - p.x;
-            let dy = this.mouse.y - p.y;
+        this.dots.forEach(d => {
+            // Взаимодействие с мышью (Притяжение)
+            let dx = this.mouse.x - d.x;
+            let dy = this.mouse.y - d.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            if(dist < 200) {
-                p.x += dx * 0.01;
-                p.y += dy * 0.01;
+            if(dist < 180) {
+                d.x += dx * 0.012;
+                d.y += dy * 0.012;
             }
 
-            p.x += p.vx;
-            p.y += p.vy;
+            d.x += d.vx;
+            d.y += d.vy;
 
-            if(p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
-            if(p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+            // Отскоки от стен
+            if(d.x < 0 || d.x > this.canvas.width) d.vx *= -1;
+            if(d.y < 0 || d.y > this.canvas.height) d.vy *= -1;
 
             this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            this.ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
             this.ctx.fillStyle = color;
-            this.ctx.globalAlpha = 0.4;
+            this.ctx.globalAlpha = 0.25;
             this.ctx.fill();
         });
 
-        // Линии между частицами
-        for(let i=0; i<this.items.length; i++) {
-            for(let j=i+1; j<this.items.length; j++) {
-                let d = Math.sqrt((this.items[i].x - this.items[j].x)**2 + (this.items[i].y - this.items[j].y)**2);
-                if(d < 100) {
+        // Рисование связей
+        for(let i=0; i<this.dots.length; i++) {
+            for(let j=i+1; j<this.dots.length; j++) {
+                let d2 = Math.sqrt((this.dots[i].x - this.dots[j].x)**2 + (this.dots[i].y - this.dots[j].y)**2);
+                if(d2 < 110) {
                     this.ctx.beginPath();
-                    this.ctx.moveTo(this.items[i].x, this.items[i].y);
-                    this.ctx.lineTo(this.items[j].x, this.items[j].y);
+                    this.ctx.moveTo(this.dots[i].x, this.dots[i].y);
+                    this.ctx.lineTo(this.dots[j].x, this.dots[j].y);
                     this.ctx.strokeStyle = color;
-                    this.ctx.globalAlpha = 1 - (d/100);
-                    this.ctx.lineWidth = 0.5;
+                    this.ctx.globalAlpha = (1 - (d2/110)) * 0.2;
+                    this.ctx.lineWidth = 0.6;
                     this.ctx.stroke();
                 }
             }
         }
-        requestAnimationFrame(() => this.draw());
+        requestAnimationFrame(() => this.animate());
     }
 };
 
 /**
  * ========================================================================
- * 3. ЗВУКОВОЙ ДВИЖОК
+ * 3. AUDIO ENGINE (WEB AUDIO API)
  * ========================================================================
  */
-const AudioFX = {
+const Sfx = {
     ctx: new (window.AudioContext || window.webkitAudioContext)(),
     
     play(freq, type, dur, vol = 0.1) {
+        if(this.ctx.state === 'suspended') this.ctx.resume();
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = type;
@@ -600,332 +582,380 @@ const AudioFX = {
         osc.stop(this.ctx.currentTime + dur);
     },
 
-    click() { this.play(600, 'sine', 0.1); },
-    reveal() { this.play(800, 'sine', 0.05, 0.05); },
-    boom() { this.play(100, 'sawtooth', 0.6, 0.2); },
-    win() { 
-        this.play(440, 'sine', 0.2); 
-        setTimeout(() => this.play(660, 'sine', 0.4), 150); 
+    tap() { this.play(550, 'sine', 0.1, 0.05); },
+    pop() { this.play(900, 'sine', 0.04, 0.03); },
+    explosion() { this.play(80, 'sawtooth', 0.7, 0.2); },
+    success() { 
+        this.play(523.25, 'sine', 0.15); 
+        setTimeout(() => this.play(659.25, 'sine', 0.3), 100); 
     }
 };
 
 /**
  * ========================================================================
- * 4. ОСНОВНАЯ ЛОГИКА САПЕРА
+ * 4. GAME CORE LOGIC (SAPPER)
  * ========================================================================
  */
-const Game = {
+const GameCore = {
     rows: 9, cols: 9, mines: 10,
-    grid: [],
-    isActive: false,
-    firstClick: true,
-    timer: null,
-    seconds: 0,
-    flags: 0,
+    matrix: [],
+    active: false,
+    firstMove: true,
+    timerId: null,
+    sec: 0,
+    flagsCount: 0,
     hintReady: true,
-    currentShorts: [],
+    shuffleVids: [],
 
-    init() {
-        const diff = App.difficulty;
-        const config = { easy: [9,9,10], medium: [12,12,25], expert: [16,16,45] }[diff];
-        [this.rows, this.cols, this.mines] = config;
+    reset() {
+        const d = Engine.difficulty;
+        const setup = { easy: [9,9,10], med: [12,12,25], hard: [16,16,45] }[d];
+        [this.rows, this.cols, this.mines] = setup;
 
-        this.grid = [];
-        this.isActive = true;
-        this.firstClick = true;
-        this.seconds = 0;
-        this.flags = 0;
-        clearInterval(this.timer);
+        this.matrix = [];
+        this.active = true;
+        this.firstMove = true;
+        this.sec = 0;
+        this.flagsCount = 0;
+        clearInterval(this.timerId);
         
-        // Перемешивание видео для текущей сессии
-        this.currentShorts = [...VIDEO_IDS].sort(() => Math.random() - 0.5);
+        // Рандомизация видео при каждой новой игре (Fisher-Yates)
+        this.shuffleVids = [...SHORTS_LIBRARY];
+        for(let i = this.shuffleVids.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.shuffleVids[i], this.shuffleVids[j]] = [this.shuffleVids[j], this.shuffleVids[i]];
+        }
 
-        this.renderHUD();
-        this.createBoard();
+        this.updateHUD();
+        this.buildGrid();
     },
 
-    createBoard() {
-        const field = document.getElementById('minefield');
-        field.innerHTML = '';
-        field.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
+    buildGrid() {
+        const container = document.getElementById('game-grid');
+        container.innerHTML = '';
+        container.style.gridTemplateColumns = `repeat(${this.cols}, 1fr)`;
 
         for(let r=0; r<this.rows; r++) {
-            this.grid[r] = [];
+            this.matrix[r] = [];
             for(let c=0; c<this.cols; c++) {
-                const el = document.createElement('div');
-                el.className = 'cell';
-                el.onclick = () => this.handleReveal(r, c);
-                el.oncontextmenu = (e) => { e.preventDefault(); this.handleFlag(r, c); };
+                const cellEl = document.createElement('div');
+                cellEl.className = 'game-cell';
                 
-                field.appendChild(el);
-                this.grid[r][c] = { mine: false, revealed: false, flagged: false, count: 0, el: el };
+                cellEl.onclick = () => this.reveal(r, c);
+                cellEl.oncontextmenu = (e) => { e.preventDefault(); this.toggleFlag(r, c); };
+                
+                container.appendChild(cellEl);
+                this.matrix[r][c] = { 
+                    isMine: false, 
+                    isRevealed: false, 
+                    isFlagged: false, 
+                    neighborMines: 0, 
+                    el: cellEl 
+                };
             }
         }
     },
 
-    handleReveal(r, c) {
-        if(!this.isActive || this.grid[r][c].flagged) return;
+    reveal(r, c) {
+        if(!this.active || this.matrix[r][c].isFlagged) return;
 
-        if(this.firstClick) {
-            this.firstClick = false;
-            this.placeMines(r, c);
+        if(this.firstMove) {
+            this.firstMove = false;
+            this.generateMines(r, c);
             this.startTimer();
         }
 
-        this.revealRecursive(r, c);
+        this.cascadeOpen(r, c);
     },
 
-    // ВОЛНОВАЯ АНИМАЦИЯ ОТКРЫТИЯ
-    async revealRecursive(r, c, depth = 0) {
+    /**
+     * ВОЛНОВАЯ (КАСКАДНАЯ) АНИМАЦИЯ ОТКРЫТИЯ
+     * depth влияет на задержку (чем дальше от клика - тем позже открывается)
+     */
+    async cascadeOpen(r, c, depth = 0) {
         if(r < 0 || r >= this.rows || c < 0 || c >= this.cols) return;
-        const cell = this.grid[r][c];
-        if(cell.revealed || cell.flagged) return;
+        const cell = this.matrix[r][c];
+        if(cell.isRevealed || cell.isFlagged) return;
 
-        // Задержка зависит от "глубины" (расстояния от точки клика)
-        if(depth > 0) await new Promise(res => setTimeout(res, depth * 35));
+        // Эффект волны через задержку
+        if(depth > 0) {
+            await new Promise(resolve => setTimeout(resolve, depth * 35));
+        }
 
-        cell.revealed = true;
-        cell.el.classList.add('revealed');
-        AudioFX.reveal();
+        cell.isRevealed = true;
+        cell.el.classList.add('is-revealed');
+        Sfx.pop();
 
-        if(cell.mine) {
-            this.gameOver(false);
+        if(cell.isMine) {
+            this.endGame(false);
             return;
         }
 
-        if(cell.count > 0) {
-            cell.el.textContent = cell.count;
-            cell.el.classList.add('val-' + Math.min(cell.count, 5));
+        if(cell.neighborMines > 0) {
+            cell.el.textContent = cell.neighborMines;
+            cell.el.classList.add('n-' + Math.min(cell.neighborMines, 6));
         } else {
-            // Рекурсия по соседям
-            for(let i=-1; i<=1; i++) {
-                for(let j=-1; j<=1; j++) {
-                    if(i === 0 && j === 0) continue;
-                    this.revealRecursive(r+i, c+j, depth + 1);
+            // Рекурсивный обход соседей
+            for(let dr=-1; dr<=1; dr++) {
+                for(let dc=-1; dc<=1; dc++) {
+                    if(dr === 0 && dc === 0) continue;
+                    this.cascadeOpen(r + dr, c + dc, depth + 1);
                 }
             }
         }
-        this.checkWin();
+        this.verifyVictory();
     },
 
-    placeMines(exR, exC) {
+    generateMines(safeR, safeC) {
         let placed = 0;
         while(placed < this.mines) {
-            let r = Math.floor(Math.random()*this.rows);
-            let c = Math.floor(Math.random()*this.cols);
-            // Не ставим мину в радиусе 1 клетки от первого клика
-            if(!this.grid[r][c].mine && (Math.abs(r-exR) > 1 || Math.abs(c-exC) > 1)) {
-                this.grid[r][c].mine = true;
+            let rr = Math.floor(Math.random() * this.rows);
+            let cc = Math.floor(Math.random() * this.cols);
+            
+            // Гарантируем пустоту вокруг первого клика
+            const isSafeZone = Math.abs(rr - safeR) <= 1 && Math.abs(cc - safeC) <= 1;
+            
+            if(!this.matrix[rr][cc].isMine && !isSafeZone) {
+                this.matrix[rr][cc].isMine = true;
                 placed++;
             }
         }
 
-        // Подсчет цифр
+        // Расчет цифр
         for(let r=0; r<this.rows; r++) {
             for(let c=0; c<this.cols; c++) {
-                if(this.grid[r][c].mine) continue;
-                let n = 0;
+                if(this.matrix[r][c].isMine) continue;
+                let count = 0;
                 for(let i=-1; i<=1; i++) {
                     for(let j=-1; j<=1; j++) {
-                        if(this.grid[r+i] && this.grid[r+i][c+j] && this.grid[r+i][c+j].mine) n++;
+                        if(this.matrix[r+i] && this.matrix[r+i][c+j] && this.matrix[r+i][c+j].isMine) count++;
                     }
                 }
-                this.grid[r][c].count = n;
+                this.matrix[r][c].neighborMines = count;
             }
         }
     },
 
-    handleFlag(r, c) {
-        if(!this.isActive || this.grid[r][c].revealed) return;
-        const cell = this.grid[r][c];
-        cell.flagged = !cell.flagged;
-        cell.el.classList.toggle('flagged');
-        this.flags += cell.flagged ? 1 : -1;
-        AudioFX.click();
-        this.renderHUD();
+    toggleFlag(r, c) {
+        if(!this.active || this.matrix[r][c].isRevealed) return;
+        const cell = this.matrix[r][c];
+        
+        cell.isFlagged = !cell.isFlagged;
+        cell.el.classList.toggle('is-flagged');
+        this.flagsCount += cell.isFlagged ? 1 : -1;
+        
+        Sfx.tap();
+        this.updateHUD();
     },
 
-    renderHUD() {
-        // Отрицательные значения тоже поддерживаются
-        const count = this.mines - this.flags;
-        const formatted = count < 0 ? "-" + String(Math.abs(count)).padStart(2, '0') : String(count).padStart(3, '0');
-        document.getElementById('mine-count').textContent = "💣 " + formatted;
+    updateHUD() {
+        // Отрицательные значения флагов
+        const diff = this.mines - this.flagsCount;
+        const displayVal = diff < 0 
+            ? "-" + Math.abs(diff).toString().padStart(2, '0') 
+            : diff.toString().padStart(3, '0');
+        
+        document.getElementById('mine-display').textContent = "💣 " + displayVal;
     },
 
     startTimer() {
-        this.timer = setInterval(() => {
-            this.seconds++;
-            const m = Math.floor(this.seconds/60);
-            const s = this.seconds%60;
-            document.getElementById('game-timer').textContent = `⏳ ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        this.timerId = setInterval(() => {
+            this.sec++;
+            const m = Math.floor(this.sec / 60).toString().padStart(2, '0');
+            const s = (this.sec % 60).toString().padStart(2, '0');
+            document.getElementById('time-display').textContent = `⏳ ${m}:${s}`;
         }, 1000);
     },
 
-    checkWin() {
-        const closed = this.grid.flat().filter(c => !c.revealed).length;
-        if(closed === this.mines) this.gameOver(true);
+    verifyVictory() {
+        const closedCount = this.matrix.flat().filter(c => !c.isRevealed).length;
+        if(closedCount === this.mines) this.endGame(true);
     },
 
-    gameOver(win) {
-        this.isActive = false;
-        clearInterval(this.timer);
+    endGame(win) {
+        this.active = false;
+        clearInterval(this.timerId);
         
-        this.grid.flat().forEach(c => {
-            if(c.mine) {
-                c.el.classList.add('mine');
+        // Вскрываем все мины
+        this.matrix.flat().forEach(c => {
+            if(c.isMine) {
+                c.el.classList.add('is-mine');
                 c.el.innerHTML = '<i class="fas fa-bomb"></i>';
             }
         });
 
         if(win) {
-            AudioFX.win();
-            App.showModal(I18N[App.lang].win, `Time: ${this.seconds}s`);
+            Sfx.success();
+            UI.showModal(CONFIG[Engine.lang].win, `Time: ${this.sec}s`);
         } else {
-            AudioFX.boom();
-            App.showModal(I18N[App.lang].lose, "Try again!");
+            Sfx.explosion();
+            UI.showModal(CONFIG[Engine.lang].lose, "Better luck next time!");
         }
     },
 
     /**
-     * ЛОГИКА ХИНТОВ И SHORTS (ЗАЩИТА ОТ СКИПА)
+     * МОДУЛЬ ПОДСКАЗОК И ЗАЩИТЫ ВИДЕО
      */
-    getHint() {
-        if(!this.isActive) return;
+    requestHint() {
+        if(!this.active) return;
 
         if(this.hintReady) {
-            this.executeHint();
+            this.giveHint();
             this.hintReady = false;
         } else {
-            this.openShortsModule();
+            VideoGuard.start();
         }
     },
 
-    executeHint() {
-        const safeCells = this.grid.flat().filter(c => !c.mine && !c.revealed);
+    giveHint() {
+        const safeCells = this.matrix.flat().filter(c => !c.isMine && !c.isRevealed);
         if(safeCells.length) {
-            const pick = safeCells[Math.floor(Math.random()*safeCells.length)];
-            pick.el.style.boxShadow = "inset 0 0 20px #fff, 0 0 25px var(--primary)";
-            setTimeout(() => pick.el.style.boxShadow = "", 2000);
-        }
-    },
-
-    openShortsModule() {
-        const videoId = this.currentShorts[Math.floor(Math.random()*this.currentShorts.length)];
-        const container = document.getElementById('shorts-container');
-        const player = document.getElementById('yt-player');
-        
-        player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=0&disablekb=1`;
-        container.classList.add('visible');
-
-        let timeLeft = 15;
-        const btn = document.getElementById('shorts-timer');
-        btn.textContent = timeLeft + "s";
-
-        const timer = setInterval(() => {
-            timeLeft--;
-            btn.textContent = timeLeft + "s";
-            if(timeLeft <= 0) {
-                clearInterval(timer);
-                btn.textContent = "DONE";
-                btn.style.background = "#00ff88";
-                this.hintUnlocked = true;
-            }
-        }, 1000);
-
-        this.shortsInterval = timer;
-    },
-
-    cancelShorts() {
-        clearInterval(this.shortsInterval);
-        document.getElementById('shorts-container').classList.remove('visible');
-        document.getElementById('yt-player').src = "";
-        
-        if(this.hintUnlocked) {
-            this.executeHint();
-            this.hintUnlocked = false;
+            const target = safeCells[Math.floor(Math.random() * safeCells.length)];
+            // Подсветка клетки
+            target.el.style.boxShadow = "0 0 25px #fff, inset 0 0 15px var(--primary)";
+            target.el.style.borderColor = "#fff";
+            setTimeout(() => {
+                target.el.style.boxShadow = "";
+                target.el.style.borderColor = "";
+            }, 2500);
         }
     }
 };
 
 /**
  * ========================================================================
- * 5. УПРАВЛЕНИЕ ПРИЛОЖЕНИЕМ (UI & STATE)
+ * 5. VIDEO GUARD MODULE (YT SHORTS TRACKER)
  * ========================================================================
  */
-const App = {
-    lang: 'ru',
+const VideoGuard = {
+    interval: null,
+    isUnlocked: false,
+
+    start() {
+        const vidList = GameCore.shuffleVids;
+        const randomID = vidList[Math.floor(Math.random() * vidList.length)];
+        
+        const frame = document.getElementById('yt-frame');
+        frame.src = `https://www.youtube.com/embed/${randomID}?autoplay=1&controls=0&modestbranding=1&rel=0`;
+        
+        document.getElementById('shorts-player-view').classList.add('visible');
+        
+        let countdown = 15;
+        const badge = document.getElementById('video-countdown');
+        badge.textContent = countdown + "s";
+        badge.style.background = "var(--primary)";
+
+        this.interval = setInterval(() => {
+            countdown--;
+            badge.textContent = countdown + "s";
+            
+            if(countdown <= 0) {
+                clearInterval(this.interval);
+                badge.textContent = "HINT READY";
+                badge.style.background = "#00ff88";
+                this.isUnlocked = true;
+            }
+        }, 1000);
+    },
+
+    close() {
+        clearInterval(this.interval);
+        document.getElementById('shorts-player-view').classList.remove('visible');
+        document.getElementById('yt-frame').src = "";
+        
+        if(this.isUnlocked) {
+            GameCore.giveHint();
+            this.isUnlocked = false;
+        }
+    }
+};
+
+/**
+ * ========================================================================
+ * 6. UI & APPLICATION ENGINE
+ * ========================================================================
+ */
+const Engine = {
+    lang: 'RU',
     difficulty: 'easy',
     theme: 'neon',
 
     init() {
-        this.updateStrings();
         Particles.init();
+        this.applyStrings();
     },
 
-    startGame() {
-        this.showScreen('game');
-        Game.init();
+    launchGame() {
+        this.switchScreen('game');
+        GameCore.reset();
     },
 
-    showScreen(id) {
-        AudioFX.click();
+    exitToMenu() {
+        this.switchScreen('menu');
+        clearInterval(GameCore.timerId);
+    },
+
+    switchScreen(id) {
+        Sfx.tap();
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id + '-screen').classList.add('active');
     },
 
-    updateStrings() {
+    applyStrings() {
+        const dict = CONFIG[this.lang];
         document.querySelectorAll('[data-i18n]').forEach(el => {
-            el.textContent = I18N[this.lang][el.dataset.i18n];
+            el.textContent = dict[el.dataset.i18n];
         });
+    }
+};
+
+const UI = {
+    showModal(title, html) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-html-content').innerHTML = html;
+        document.getElementById('global-modal').classList.add('visible');
+    },
+
+    closeModal() {
+        document.getElementById('global-modal').classList.remove('visible');
     },
 
     openSettings() {
-        this.showModal(I18N[this.lang].settings, `
-            <div style="text-align: left;">
-                <label style="display:block; margin: 10px 0; opacity: 0.6; font-size: 0.8rem;">LANGUAGE</label>
-                <select onchange="App.setLang(this.value)" style="width:100%; background:#1a1a2e; color:#fff; border:1px solid var(--primary); padding:12px; border-radius:10px;">
-                    <option value="ru" ${this.lang==='ru'?'selected':''}>РУССКИЙ</option>
-                    <option value="en" ${this.lang==='en'?'selected':''}>ENGLISH</option>
+        this.showModal(CONFIG[Engine.lang].settings, `
+            <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+                <label style="font-size: 0.7rem; color: var(--primary);">LANGUAGE</label>
+                <select onchange="Engine.lang=this.value; Engine.applyStrings(); UI.closeModal(); UI.openSettings();" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
+                    <option value="RU" ${Engine.lang==='RU'?'selected':''}>РУССКИЙ</option>
+                    <option value="EN" ${Engine.lang==='EN'?'selected':''}>ENGLISH</option>
                 </select>
 
-                <label style="display:block; margin: 15px 0 10px; opacity: 0.6; font-size: 0.8rem;">THEME</label>
-                <select onchange="App.setTheme(this.value)" style="width:100%; background:#1a1a2e; color:#fff; border:1px solid var(--primary); padding:12px; border-radius:10px;">
+                <label style="font-size: 0.7rem; color: var(--primary); margin-top: 10px;">DIFFICULTY</label>
+                <select onchange="Engine.difficulty=this.value" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
+                    <option value="easy">${CONFIG[Engine.lang].easy}</option>
+                    <option value="med">${CONFIG[Engine.lang].med}</option>
+                    <option value="hard">${CONFIG[Engine.lang].hard}</option>
+                </select>
+
+                <label style="font-size: 0.7rem; color: var(--primary); margin-top: 10px;">COLOR THEME</label>
+                <select onchange="document.body.setAttribute('data-theme', this.value)" style="width:100%; padding:12px; background:#222; border:1px solid #444; color:#fff; border-radius:10px;">
                     <option value="neon">CYBER NEON</option>
                     <option value="ocean">DEEP OCEAN</option>
-                    <option value="emerald">EMERALD FOREST</option>
-                    <option value="gold">LUXURY GOLD</option>
+                    <option value="emerald">EMERALD</option>
+                    <option value="gold">GOLDEN LUSTRE</option>
                     <option value="blood">BLOOD MOON</option>
-                </select>
-
-                <label style="display:block; margin: 15px 0 10px; opacity: 0.6; font-size: 0.8rem;">DIFFICULTY</label>
-                <select onchange="App.difficulty=this.value" style="width:100%; background:#1a1a2e; color:#fff; border:1px solid var(--primary); padding:12px; border-radius:10px;">
-                    <option value="easy">${I18N[this.lang].easy}</option>
-                    <option value="medium">${I18N[this.lang].med}</option>
-                    <option value="expert">${I18N[this.lang].hard}</option>
                 </select>
             </div>
         `);
     },
 
-    setLang(l) { this.lang = l; this.updateStrings(); this.closeModal(); this.openSettings(); },
-    setTheme(t) { document.body.setAttribute('data-theme', t); },
-
     openRecords() {
-        this.showModal(I18N[this.lang].records, "<p style='opacity:0.5'>Leaders will appear here...</p>");
-    },
-
-    showModal(title, content) {
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-desc').innerHTML = content;
-        document.getElementById('modal-overlay').classList.add('visible');
-    },
-
-    closeModal() {
-        document.getElementById('modal-overlay').classList.remove('visible');
+        this.showModal(CONFIG[Engine.lang].records, "<p style='font-family: var(--font-mono);'>No local records found yet.</p>");
     }
 };
 
-window.onload = () => App.init();
+// Запуск приложения
+window.onload = () => Engine.init();
+
 </script>
 </body>
 </html>
